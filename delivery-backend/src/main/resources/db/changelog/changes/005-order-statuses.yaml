@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-migrate-in-progress-status
+      author: delivery
+      changes:
+        - sql:
+            sql: >
+              UPDATE delivery.delivery_orders
+              SET status = 'courier_heading_to_pickup'
+              WHERE status = 'in_progress'

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Курьерская доставка</title>
+    <script>
+      (function () {
+        window.__maxBridgeScriptUrl = 'https://st.max.ru/js/max-web-app.js';
+        window.__maxBridgeLoaded = false;
+        window.__telegramBridgeScriptUrl = '/telegram-web-app.js';
+        window.__telegramBridgeLoaded = false;
+
+        function getPlatformParam() {
+          try {
+            var raw = new URLSearchParams(window.location.search || '').get('platform') || '';
+            return String(raw).trim().toLowerCase();
+          } catch (e) {
+            return '';
+          }
+        }
+
+        function loadScript(src, onload, onerror) {
+          var s = document.createElement('script');
+          s.src = src;
+          s.onload = onload;
+          s.onerror = onerror;
+          document.head.appendChild(s);
+        }
+
+        function loadTelegramBridge() {
+          loadScript(
+            window.__telegramBridgeScriptUrl,
+            function () {
+              window.__telegramBridgeLoaded = true;
+            },
+            function () {
+              window.__telegramBridgeError = 'script load failed';
+            },
+          );
+        }
+
+        function loadMaxBridge() {
+          if (window.WebApp) {
+            window.__maxBridgeLoaded = true;
+            return;
+          }
+          loadScript(
+            window.__maxBridgeScriptUrl,
+            function () {
+              window.__maxBridgeLoaded = !!window.WebApp;
+            },
+            function () {
+              window.__maxBridgeError = 'script load failed';
+            },
+          );
+        }
+
+        var platformParam = getPlatformParam();
+        window.__forcedPlatform =
+          platformParam === 'tg' || platformParam === 'telegram'
+            ? 'telegram'
+            : platformParam === 'max'
+              ? 'max'
+              : null;
+
+        if (window.__forcedPlatform === 'telegram') {
+          loadTelegramBridge();
+          return;
+        }
+        if (window.__forcedPlatform === 'max') {
+          loadMaxBridge();
+          return;
+        }
+
+        var search = window.location.search || '';
+        var hash = window.location.hash || '';
+        var combined = search + hash;
+        var isMaxPlatform = /tgWebAppPlatform=max/i.test(combined);
+        var isMaxReferrer = false;
+        try {
+          isMaxReferrer =
+            typeof document.referrer === 'string' && /max\.(ru|com|ai)/i.test(document.referrer);
+        } catch (e) {}
+        var isMaxUserAgent =
+          typeof navigator !== 'undefined' && /\bMAX\/[\d.]+/i.test(navigator.userAgent || '');
+        var ambiguousMiniAppDeepLink =
+          /WebAppStartParam|startapp=/i.test(search) && !/tgWebAppData=/i.test(combined);
+        var hasStrongMaxHints = isMaxPlatform || isMaxReferrer || ambiguousMiniAppDeepLink || isMaxUserAgent;
+
+        var tg = window.Telegram && window.Telegram.WebApp;
+        var hasTelegramMiniAppAuth =
+          tg && typeof tg.initData === 'string' && tg.initData.length > 0;
+        if (hasTelegramMiniAppAuth) return;
+
+        if (hasStrongMaxHints) {
+          loadMaxBridge();
+        }
+      })();
+    </script>
+    <script>
+      (function () {
+        try {
+          if (window.__forcedPlatform === 'max') return;
+          var tg = window.Telegram && window.Telegram.WebApp;
+          if (tg && typeof tg.initData === 'string' && tg.initData.length > 0) {
+            if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
+            try {
+              tg.setHeaderColor('#f2f4f7');
+            } catch (e) {}
+            try {
+              tg.setBackgroundColor('#f2f4f7');
+            } catch (e) {}
+            tg.ready();
+            try {
+              var startParam =
+                (tg.initDataUnsafe && tg.initDataUnsafe.start_param) ||
+                (typeof tg.getStartParam === 'function' ? tg.getStartParam() : null) ||
+                tg.startParam;
+              if (!startParam) {
+                var params = new URLSearchParams(window.location.search || '');
+                startParam =
+                  params.get('start_param') ||
+                  params.get('startapp') ||
+                  params.get('tgWebAppStartParam');
+              }
+              if (startParam && startParam.indexOf('delivery_order_') === 0) {
+                sessionStorage.setItem(
+                  'delivery_pending_order_id',
+                  startParam.slice('delivery_order_'.length),
+                );
+                sessionStorage.setItem('delivery_pending_order_kind', 'free');
+              } else if (startParam && startParam.indexOf('delivery_my_order_') === 0) {
+                sessionStorage.setItem(
+                  'delivery_pending_order_id',
+                  startParam.slice('delivery_my_order_'.length),
+                );
+                sessionStorage.setItem('delivery_pending_order_kind', 'my');
+              }
+            } catch (e) {}
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

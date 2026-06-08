@@ -1,0 +1,86 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-unify-courier-requests-columns
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: courier_requests
+            columns:
+              - column:
+                  name: messenger_provider
+                  type: varchar(16)
+              - column:
+                  name: messenger_external_id
+                  type: varchar(64)
+              - column:
+                  name: messenger_username
+                  type: varchar(128)
+              - column:
+                  name: transport
+                  type: varchar(128)
+              - column:
+                  name: linked_user_id
+                  type: bigint
+              - column:
+                  name: source
+                  type: varchar(16)
+        - sql:
+            sql: UPDATE delivery.courier_requests SET source = 'web' WHERE source IS NULL
+        - createIndex:
+            schemaName: delivery
+            tableName: courier_requests
+            indexName: idx_courier_requests_messenger
+            columns:
+              - column:
+                  name: messenger_provider
+              - column:
+                  name: messenger_external_id
+        - createIndex:
+            schemaName: delivery
+            tableName: courier_requests
+            indexName: idx_courier_requests_status
+            columns:
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 011-migrate-courier-applications-data
+      author: delivery
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            schemaName: delivery
+            tableName: courier_applications
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO delivery.courier_requests (
+                id, full_name, phone, city, comment, status,
+                messenger_provider, messenger_external_id, messenger_username,
+                transport, linked_user_id, source, created_at, updated_at
+              )
+              SELECT
+                id, full_name, phone, city, comment,
+                CASE status
+                  WHEN 'pending' THEN 'NEW'
+                  WHEN 'approved' THEN 'APPROVED'
+                  ELSE 'REJECTED'
+                END,
+                messenger_provider, messenger_external_id, messenger_username,
+                transport, linked_user_id, 'messenger', created_at, updated_at
+              FROM delivery.courier_applications
+              ON CONFLICT (id) DO NOTHING
+
+  - changeSet:
+      id: 011-drop-courier-applications
+      author: delivery
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            schemaName: delivery
+            tableName: courier_applications
+      changes:
+        - dropTable:
+            schemaName: delivery
+            tableName: courier_applications

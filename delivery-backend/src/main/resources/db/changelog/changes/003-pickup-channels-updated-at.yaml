@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-pickup-points-updated-at
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: pickup_points
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 004-publication-channels-updated-at
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: publication_channels
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false

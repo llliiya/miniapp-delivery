@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-order-delivery-address-details
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: delivery_orders
+            columns:
+              - column:
+                  name: delivery_address_full
+                  type: varchar(512)
+              - column:
+                  name: delivery_apartment
+                  type: varchar(128)
+              - column:
+                  name: delivery_entrance
+                  type: varchar(256)

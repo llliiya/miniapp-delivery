@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-courier-requests
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: courier_requests
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: full_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment
+                  type: text
+              - column:
+                  name: status
+                  type: varchar(16)
+                  defaultValue: NEW
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: delivery
+            tableName: courier_requests
+            indexName: idx_courier_requests_phone_status
+            columns:
+              - column:
+                  name: phone
+              - column:
+                  name: status

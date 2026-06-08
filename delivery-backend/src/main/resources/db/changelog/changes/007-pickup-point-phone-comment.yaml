@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-pickup-point-phone-comment
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: pickup_points
+            columns:
+              - column:
+                  name: phone
+                  type: varchar(32)
+              - column:
+                  name: comment
+                  type: varchar(512)

@@ -1,0 +1,46 @@
+:root {
+  /* Brand */
+  --color-primary: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-success: #16a34a;
+  --color-error: #dc2626;
+  --color-warning: #d97706;
+
+  /* Neutrals */
+  --color-text: #1a1a1a;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+  --color-bg: #f2f4f7;
+  --color-surface: #ffffff;
+
+  /* Layout */
+  --header-height: 56px;
+  --bottom-nav-height: 64px;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Typography */
+  --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-size-brand: 20px;
+  --font-weight-brand: 700;
+
+  /* Cards */
+  --card-radius: 16px;
+  --card-padding: 20px;
+  --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+  /* Buttons */
+  --btn-height: 44px;
+  --btn-radius: 12px;
+
+  /* Status backgrounds */
+  --status-waiting-bg: #fef9c3;
+  --status-waiting-text: #854d0e;
+  --status-pickup-bg: #dbeafe;
+  --status-pickup-text: #1d4ed8;
+  --status-delivering-bg: #ede9fe;
+  --status-delivering-text: #6d28d9;
+  --status-completed-bg: #dcfce7;
+  --status-completed-text: #15803d;
+  --status-cancelled-bg: #fee2e2;
+  --status-cancelled-text: #b91c1c;
+}

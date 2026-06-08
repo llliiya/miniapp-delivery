@@ -1,0 +1,115 @@
+# Локальный стек delivery-миниаппа (из корня valentin).
+# Запуск: docker compose -f miniapp-delivery/docker-compose.dev.yml --env-file miniapp-deploy/deploy/dev-stack.env up --build -d
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${DELIVERY_POSTGRES_DB:-delivery}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - delivery_dev_pg:/var/lib/postgresql/data
+      - ./docker/init-schemas.sql:/docker-entrypoint-initdb.d/01-schemas.sql:ro
+    ports:
+      - "${STACK_DB_HOST_PORT:-5430}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d delivery"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  account:
+    build:
+      context: ..
+      dockerfile: miniapp-account/Dockerfile.stack
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${MINAPP_ACCOUNT_SPRING_PROFILES:-dev}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DELIVERY_POSTGRES_DB:-delivery}
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET}
+      MINAPP_INTERNAL_MONOLITH_KEY: ${MINAPP_INTERNAL_MONOLITH_KEY}
+      MINAPP_NOTIFICATION_BASE_URL: http://notification:8093
+      FRONTEND_URL: ${FRONTEND_DELIVERY_URL:-http://localhost:5174}
+      TG_TOKEN: ${TG_TOKEN:-}
+      TG_USERNAME: ${TG_BOT_USERNAME:-}
+
+  notification:
+    build:
+      context: ..
+      dockerfile: miniapp-notification/Dockerfile.stack
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NOTIFICATION_DB_URL: jdbc:postgresql://db:5432/${DELIVERY_POSTGRES_DB:-delivery}
+      NOTIFICATION_DB_USERNAME: postgres
+      NOTIFICATION_DB_PASSWORD: postgres
+
+  delivery-backend:
+    build:
+      context: ..
+      dockerfile: miniapp-delivery/delivery-backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      account:
+        condition: service_started
+    environment:
+      DELIVERY_SERVER_PORT: "9081"
+      SPRING_PROFILES_ACTIVE: dev
+      DELIVERY_DB_URL: jdbc:postgresql://db:5432/${DELIVERY_POSTGRES_DB:-delivery}?currentSchema=delivery
+      DELIVERY_DB_USERNAME: postgres
+      DELIVERY_DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET}
+      MINAPP_ACCOUNT_BASE_URL: http://account:8092
+      MINAPP_INTERNAL_MONOLITH_KEY: ${MINAPP_INTERNAL_MONOLITH_KEY}
+      MINAPP_NOTIFICATION_BASE_URL: http://notification:8093
+      FRONTEND_DELIVERY_URL: ${FRONTEND_DELIVERY_URL:-http://localhost:5174}
+      TG_TOKEN: ${TG_TOKEN:-}
+      TG_BOT_USERNAME: ${TG_BOT_USERNAME:-}
+      MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
+      MAX_BOT_USERNAME: ${MAX_BOT_USERNAME:-}
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: miniapp-gateway/Dockerfile
+    depends_on:
+      - account
+      - notification
+      - delivery-backend
+    ports:
+      - "${DEV_DELIVERY_GATEWAY_PORT:-8081}:8080"
+    environment:
+      GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS: ${GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS:-*}
+      GATEWAY_URI_MINAPP_ACCOUNT: http://account:8092
+      GATEWAY_URI_MINIAPP_NOTIFICATION: http://notification:8093
+      GATEWAY_URI_DELIVERY_BACKEND: http://delivery-backend:9081
+      GATEWAY_URI_MINIAPP_BACKEND: http://delivery-backend:9081
+      GATEWAY_URI_MEDIA_SERVICE: http://notification:8093
+
+  delivery-frontend:
+    build:
+      context: ./delivery-frontend
+      dockerfile: Dockerfile.dev
+      args:
+        VITE_ENV: dev
+        VITE_API_BASE_URL: ${DEV_DELIVERY_VITE_API_BASE_URL:-http://localhost:5174}
+        VITE_YANDEX_MAPS_API_KEY: ${VITE_YANDEX_MAPS_API_KEY:-}
+        VITE_DGIS_API_KEY: ${VITE_DGIS_API_KEY:-}
+    ports:
+      - "${DEV_DELIVERY_FRONTEND_PORT:-5172}:80"
+    depends_on:
+      - gateway
+
+volumes:
+  delivery_dev_pg:
+
+networks:
+  default:
+    name: delivery_dev

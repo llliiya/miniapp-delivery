@@ -1,0 +1,88 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-courier-applications
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: courier_applications
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: full_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: transport
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment
+                  type: text
+              - column:
+                  name: messenger_provider
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: messenger_external_id
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: messenger_username
+                  type: varchar(128)
+              - column:
+                  name: status
+                  type: varchar(16)
+                  defaultValue: pending
+                  constraints:
+                    nullable: false
+              - column:
+                  name: linked_user_id
+                  type: bigint
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: delivery
+            tableName: courier_applications
+            indexName: idx_courier_applications_messenger
+            columns:
+              - column:
+                  name: messenger_provider
+              - column:
+                  name: messenger_external_id
+        - createIndex:
+            schemaName: delivery
+            tableName: courier_applications
+            indexName: idx_courier_applications_status
+            columns:
+              - column:
+                  name: status

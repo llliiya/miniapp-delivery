@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-org-courier-service-id
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: organizations
+            columns:
+              - column:
+                  name: courier_service_id
+                  type: uuid
+                  remarks: Для client_restaurant — служба, к которой привязан ресторан
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: organizations
+            baseColumnNames: courier_service_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_organizations_courier_service
+        - createIndex:
+            schemaName: delivery
+            tableName: organizations
+            indexName: idx_organizations_courier_service
+            columns:
+              - column:
+                  name: courier_service_id
+
+  - changeSet:
+      id: 003-user-delivery-context
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: user_delivery_context
+            columns:
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: active_organization_id
+                  type: uuid
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false

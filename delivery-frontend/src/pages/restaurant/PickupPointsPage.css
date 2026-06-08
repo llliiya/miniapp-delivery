@@ -1,0 +1,139 @@
+.pickup-points-form-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+}
+
+.pickup-points-form-card h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.pickup-points-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 42%);
+  gap: 20px;
+  align-items: start;
+}
+
+.pickup-points-form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pickup-points-form-fields label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0;
+}
+
+.pickup-points-form-fields label .input,
+.pickup-points-form-fields label textarea {
+  margin-top: 6px;
+}
+
+.pickup-points-form-fields textarea.input {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.pickup-points-form-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.pickup-points-form-map {
+  min-height: 280px;
+}
+
+.pickup-points-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pickup-points-form-actions .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pickup-point-card__meta {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pickup-point-card__meta + .pickup-point-card__meta {
+  margin-top: 4px;
+}
+
+.pickup-point-map {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f3f4f6;
+  min-height: 280px;
+  border: 1px solid #e5e7eb;
+}
+
+.pickup-point-map__host {
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+}
+
+.pickup-point-map__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+  z-index: 2;
+  background: #f9fafb;
+}
+
+.pickup-point-map__placeholder--error {
+  color: #b91c1c;
+}
+
+.pickup-point-map__overlay {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .pickup-points-form-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pickup-points-form-map {
+    order: -1;
+    min-height: 220px;
+  }
+
+  .pickup-point-map,
+  .pickup-point-map__host {
+    min-height: 220px;
+  }
+}

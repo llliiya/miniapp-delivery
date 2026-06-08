@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-user-delivery-profile-role
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: user_delivery_context
+            columns:
+              - column:
+                  name: delivery_role
+                  type: varchar(32)
+                  defaultValue: courier
+                  constraints:
+                    nullable: false
+                  remarks: Роль пользователя в miniapp delivery (не account.account_users)
+              - column:
+                  name: account_status
+                  type: varchar(32)
+                  defaultValue: inactive
+                  constraints:
+                    nullable: false
+                  remarks: inactive — не активирован; active — может работать; blocked — заблокирован
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false

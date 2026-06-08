@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: delivery-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: ${DELIVERY_DB_URL:jdbc:postgresql://localhost:5430/delivery?currentSchema=delivery}
+    username: ${DELIVERY_DB_USERNAME:postgres}
+    password: ${DELIVERY_DB_PASSWORD:postgres}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: delivery
+        jdbc:
+          time_zone: UTC
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    liquibase-schema: public
+    default-schema: delivery
+
+server:
+  port: ${DELIVERY_SERVER_PORT:9081}
+
+app:
+  auth:
+    jwt-secret: ${JWT_SECRET:}
+
+minapp:
+  account:
+    base-url: ${MINAPP_ACCOUNT_BASE_URL:http://localhost:8092}
+    internal-key: ${MINAPP_INTERNAL_MONOLITH_KEY:}
+
+notification:
+  client:
+    base-url: ${MINAPP_NOTIFICATION_BASE_URL:http://localhost:8093}
+    source-service: ${NOTIFICATION_CLIENT_SOURCE_SERVICE:delivery-backend}
+
+delivery:
+  frontend-url: ${FRONTEND_DELIVERY_URL:http://localhost:5174}
+  telegram:
+    bot-token: ${TG_TOKEN:}
+    bot-username: ${TG_BOT_USERNAME:}
+    mini-app-short-name: ${TG_BOT_MINI_APP_SHORT_NAME:}
+    admin-chat-id: ${TG_ADMIN_CHAT_ID:}
+  max:
+    bot-token: ${MAX_BOT_TOKEN:}
+    bot-username: ${MAX_BOT_USERNAME:}
+    api-base-url: ${MAX_BOT_API_BASE_URL:https://platform-api.max.ru}

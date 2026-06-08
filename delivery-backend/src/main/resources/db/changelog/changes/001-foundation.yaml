@@ -1,0 +1,626 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-delivery-schema
+      author: delivery
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS delivery
+
+  - changeSet:
+      id: 002-organizations
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: organizations
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: public_id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: owner_user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: organizations
+            columnNames: public_id
+            constraintName: uq_organizations_public_id
+        - createIndex:
+            schemaName: delivery
+            tableName: organizations
+            indexName: idx_organizations_type
+            columns:
+              - column:
+                  name: type
+
+  - changeSet:
+      id: 003-organization-members
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: organization_members
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: public_id
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  defaultValue: active
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_name
+                  type: varchar(255)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: organization_members
+            baseColumnNames: organization_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_org_members_organization
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: organization_members
+            columnNames: organization_id, user_id
+            constraintName: uq_org_members_org_user
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: organization_members
+            columnNames: public_id
+            constraintName: uq_org_members_public_id
+
+  - changeSet:
+      id: 004-courier-profiles
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: courier_profiles
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: member_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: balance
+                  type: numeric(14,2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: completed_orders_count
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: courier_profiles
+            baseColumnNames: member_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organization_members
+            referencedColumnNames: id
+            constraintName: fk_courier_profiles_member
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: courier_profiles
+            columnNames: member_id
+            constraintName: uq_courier_profiles_member
+
+  - changeSet:
+      id: 005-pickup-points
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: pickup_points
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: restaurant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: address
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lat
+                  type: double
+              - column:
+                  name: lon
+                  type: double
+              - column:
+                  name: is_default
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: pickup_points
+            baseColumnNames: restaurant_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_pickup_points_restaurant
+
+  - changeSet:
+      id: 006-publication-channels
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: publication_channels
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: courier_service_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: chat_type
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: external_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city
+                  type: varchar(128)
+              - column:
+                  name: is_active
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: publication_channels
+            baseColumnNames: courier_service_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_channels_courier_service
+
+  - changeSet:
+      id: 007-restaurant-channel-bindings
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: restaurant_channel_bindings
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: restaurant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: channel_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: restaurant_channel_bindings
+            baseColumnNames: restaurant_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_bindings_restaurant
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: restaurant_channel_bindings
+            baseColumnNames: channel_id
+            referencedTableSchemaName: delivery
+            referencedTableName: publication_channels
+            referencedColumnNames: id
+            constraintName: fk_bindings_channel
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: restaurant_channel_bindings
+            columnNames: restaurant_id, channel_id
+            constraintName: uq_bindings_restaurant_channel
+
+  - changeSet:
+      id: 008-delivery-orders
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: delivery_orders
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: public_number
+                  type: bigserial
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: courier_service_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: restaurant_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pickup_point_id
+                  type: uuid
+              - column:
+                  name: channel_id
+                  type: uuid
+              - column:
+                  name: pickup_address
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: delivery_address
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pickup_lat
+                  type: double
+              - column:
+                  name: pickup_lon
+                  type: double
+              - column:
+                  name: delivery_lat
+                  type: double
+              - column:
+                  name: delivery_lon
+                  type: double
+              - column:
+                  name: delivery_time
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: numeric(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price_source
+                  type: varchar(32)
+                  defaultValue: manual
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_phone
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment
+                  type: text
+              - column:
+                  name: status
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: courier_user_id
+                  type: bigint
+              - column:
+                  name: created_by_user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: published_at
+                  type: timestamptz
+              - column:
+                  name: accepted_at
+                  type: timestamptz
+              - column:
+                  name: completed_at
+                  type: timestamptz
+              - column:
+                  name: cancelled_at
+                  type: timestamptz
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: delivery_orders
+            columnNames: public_number
+            constraintName: uq_delivery_orders_public_number
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: delivery_orders
+            baseColumnNames: courier_service_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_orders_courier_service
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: delivery_orders
+            baseColumnNames: restaurant_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_orders_restaurant
+        - createIndex:
+            schemaName: delivery
+            tableName: delivery_orders
+            indexName: idx_orders_service_status
+            columns:
+              - column:
+                  name: courier_service_id
+              - column:
+                  name: status
+        - createIndex:
+            schemaName: delivery
+            tableName: delivery_orders
+            indexName: idx_orders_restaurant
+            columns:
+              - column:
+                  name: restaurant_id
+        - createIndex:
+            schemaName: delivery
+            tableName: delivery_orders
+            indexName: idx_orders_courier
+            columns:
+              - column:
+                  name: courier_user_id
+
+  - changeSet:
+      id: 009-order-channel-posts
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: order_channel_posts
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: channel_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: platform
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: external_chat_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: external_message_id
+                  type: varchar(128)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: order_channel_posts
+            baseColumnNames: order_id
+            referencedTableSchemaName: delivery
+            referencedTableName: delivery_orders
+            referencedColumnNames: id
+            constraintName: fk_posts_order
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: order_channel_posts
+            baseColumnNames: channel_id
+            referencedTableSchemaName: delivery
+            referencedTableName: publication_channels
+            referencedColumnNames: id
+            constraintName: fk_posts_channel
+
+  - changeSet:
+      id: 010-balance-transactions
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: balance_transactions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: courier_member_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: numeric(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: varchar(512)
+              - column:
+                  name: order_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: balance_transactions
+            baseColumnNames: courier_member_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organization_members
+            referencedColumnNames: id
+            constraintName: fk_balance_tx_courier_member
