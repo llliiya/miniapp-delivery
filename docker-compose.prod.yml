@@ -1,20 +1,22 @@
-# Локальный delivery-стек (из корня valentin).
-# Запуск: docker compose -f miniapp-delivery/docker-compose.dev.yml up --build -d
+# Prod delivery-стек на выделенной машине.
+# Публичные порты: 80, 443. Запуск: deploy/deploy-delivery-full.sh
+# Перед деплоем: certbot для 85.239.58.129.sslip.io, правки секретов.
 
-name: delivery_dev
+name: delivery
 
 services:
   db:
     image: postgres:15-alpine
+    restart: unless-stopped
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf"]
     environment:
       POSTGRES_DB: delivery
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: CHANGE_ME_strong_db_password
     volumes:
-      - delivery_dev_pg:/var/lib/postgresql/data
+      - delivery_prod_pg:/var/lib/postgresql/data
       - ./docker/init-schemas.sql:/docker-entrypoint-initdb.d/01-schemas.sql:ro
-    ports:
-      - "5430:5432"
+      - ./docker/db/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d delivery"]
       interval: 5s
@@ -25,37 +27,49 @@ services:
     build:
       context: ..
       dockerfile: miniapp-account/Dockerfile.stack
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: dev
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/delivery
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      JWT_SECRET: "ОченьСекретныйКлюч1234567890"
-      MINAPP_INTERNAL_MONOLITH_KEY: dev-monolith-internal-key
+      SPRING_DATASOURCE_PASSWORD: CHANGE_ME_strong_db_password
+      JWT_SECRET: CHANGE_ME_jwt_secret_min_32_chars
+      MINAPP_INTERNAL_MONOLITH_KEY: CHANGE_ME_internal_monolith_key
       MINAPP_NOTIFICATION_BASE_URL: http://notification:8093
-      FRONTEND_URL: http://localhost:5172
-      TG_TOKEN: "8405160303:AAEyDBS-zGqFZR9rjpTZxbkVk0yU31JD8HE"
-      TG_USERNAME: podrabotka_miniapp_bot
+      FRONTEND_URL: https://85.239.58.129.sslip.io
+      TG_TOKEN: ""
+      TG_USERNAME: ""
+      PLUSOFON_API_KEY: ""
+      PLUSOFON_CLIENT_ID: ""
+      PLUSOFON_DEV: "false"
+      BYPASS_VERIFICATION_CODES: "false"
+      SMTP_HOST: ""
+      SMTP_PORT: "587"
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_SSL_ENABLE: "false"
+      SMTP_STARTTLS_ENABLE: "true"
 
   notification:
     build:
       context: ..
       dockerfile: miniapp-notification/Dockerfile.stack
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
       NOTIFICATION_DB_URL: jdbc:postgresql://db:5432/delivery
       NOTIFICATION_DB_USERNAME: postgres
-      NOTIFICATION_DB_PASSWORD: postgres
+      NOTIFICATION_DB_PASSWORD: CHANGE_ME_strong_db_password
 
   delivery-backend:
     build:
       context: ..
       dockerfile: miniapp-delivery/delivery-backend/Dockerfile
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -63,32 +77,32 @@ services:
         condition: service_started
     environment:
       DELIVERY_SERVER_PORT: "9081"
-      SPRING_PROFILES_ACTIVE: dev
       DELIVERY_DB_URL: jdbc:postgresql://db:5432/delivery?currentSchema=delivery
       DELIVERY_DB_USERNAME: postgres
-      DELIVERY_DB_PASSWORD: postgres
-      JWT_SECRET: "ОченьСекретныйКлюч1234567890"
+      DELIVERY_DB_PASSWORD: CHANGE_ME_strong_db_password
+      JWT_SECRET: CHANGE_ME_jwt_secret_min_32_chars
       MINAPP_ACCOUNT_BASE_URL: http://account:8092
-      MINAPP_INTERNAL_MONOLITH_KEY: dev-monolith-internal-key
+      MINAPP_INTERNAL_MONOLITH_KEY: CHANGE_ME_internal_monolith_key
       MINAPP_NOTIFICATION_BASE_URL: http://notification:8093
-      FRONTEND_DELIVERY_URL: http://localhost:5172
-      TG_TOKEN: "8405160303:AAEyDBS-zGqFZR9rjpTZxbkVk0yU31JD8HE"
-      TG_BOT_USERNAME: podrabotka_miniapp_bot
-      MAX_BOT_TOKEN: "f9LHodD0cOI9Cgyg3wNIPOCRlK40U1JJKsB6sf7rRIAfeIhmRM4cPi-FhXeycgbakJPzUo7CP7Q_s5R4uNtj"
-      MAX_BOT_USERNAME: id544601208994_1_bot
+      FRONTEND_DELIVERY_URL: https://85.239.58.129.sslip.io
+      TG_TOKEN: ""
+      TG_BOT_USERNAME: ""
+      TG_BOT_MINI_APP_SHORT_NAME: ""
+      TG_ADMIN_CHAT_ID: ""
+      MAX_BOT_TOKEN: ""
+      MAX_BOT_USERNAME: ""
 
   gateway:
     build:
       context: ..
       dockerfile: miniapp-delivery/docker/Dockerfile.gateway
+    restart: unless-stopped
     depends_on:
       - account
       - notification
       - delivery-backend
-    ports:
-      - "8081:8080"
     environment:
-      GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS: "*"
+      GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS: https://85.239.58.129.sslip.io
       GATEWAY_URI_MINAPP_ACCOUNT: http://account:8092
       GATEWAY_URI_MINIAPP_NOTIFICATION: http://notification:8093
       GATEWAY_URI_DELIVERY_BACKEND: http://delivery-backend:9081
@@ -98,20 +112,27 @@ services:
   delivery-frontend:
     build:
       context: ./delivery-frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
       args:
-        VITE_ENV: dev
-        VITE_API_BASE_URL: http://localhost:5172
+        VITE_ENV: production
+        VITE_API_BASE_URL: https://85.239.58.129.sslip.io
         VITE_YANDEX_MAPS_API_KEY: ""
         VITE_DGIS_API_KEY: ""
+    restart: unless-stopped
+    environment:
+      DOMAIN: 85.239.58.129.sslip.io
+      GATEWAY_HOST: gateway
     ports:
-      - "5172:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - gateway
 
 volumes:
-  delivery_dev_pg:
+  delivery_prod_pg:
 
 networks:
   default:
-    name: delivery_dev
+    name: delivery_prod

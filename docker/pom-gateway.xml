@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ru.kzn.buzanov</groupId>
+    <artifactId>miniapp</artifactId>
+    <version>1.0</version>
+    <packaging>pom</packaging>
+    <name>miniapp</name>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+        <spring.boot.version>3.3.6</spring.boot.version>
+        <spring.cloud.version>2023.0.5</spring.cloud.version>
+        <lombok.version>1.18.42</lombok.version>
+    </properties>
+
+    <modules>
+        <module>../miniapp-gateway</module>
+    </modules>
+</project>

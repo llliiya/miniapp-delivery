@@ -25,7 +25,7 @@ class TelegramKeyboardFactoryTest {
     @BeforeEach
     void setUp() {
         properties = new DeliveryBotProperties();
-        properties.setFrontendUrl("https://arenda.web.buzanov-vo.ru");
+        properties.setFrontendUrl("https://example.com");
         properties.getTelegram().setBotUsername("dobrovoz_test_bot");
         factory = new TelegramKeyboardFactory(new DeliveryDeepLinkService(properties), properties);
     }
@@ -38,7 +38,7 @@ class TelegramKeyboardFactoryTest {
         assertThat(button.url()).isNull();
         assertThat(button.webApp()).isNotNull();
         assertThat(button.webApp().url())
-                .isEqualTo("https://arenda.web.buzanov-vo.ru?start_param=delivery_order_11111111-1111-1111-1111-111111111111");
+                .isEqualTo("https://example.com?start_param=delivery_order_11111111-1111-1111-1111-111111111111");
     }
 
     @Test
