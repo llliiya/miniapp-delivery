@@ -109,6 +109,8 @@ services:
       GATEWAY_URI_MINIAPP_BACKEND: http://delivery-backend:9081
       GATEWAY_URI_MEDIA_SERVICE: http://notification:8093
 
+  # Единственная точка входа снаружи: nginx (TLS + SPA + /api/ → gateway).
+  # Конфиг: delivery-frontend/default.conf.template
   delivery-frontend:
     build:
       context: ./delivery-frontend

@@ -63,6 +63,16 @@ for repo in "${REPOS[@]}"; do
   git clone --depth 1 -b "$BRANCH" "$(clone_url "$repo")" "$repo"
 done
 
+# delivery-frontend (nginx) занимает :80 и :443 на хосте — освобождаем от system nginx/apache
+if command -v systemctl >/dev/null; then
+  for svc in nginx apache2; do
+    if systemctl is-active --quiet "$svc" 2>/dev/null; then
+      echo "[2b] Останавливаем $svc (конфликт портов 80/443 с delivery-frontend)"
+      systemctl stop "$svc" || true
+    fi
+  done
+fi
+
 echo "[3] Docker compose up"
 cd "$WORKSPACE/miniapp-delivery"
 docker compose -f docker-compose.prod.yml up -d --build
