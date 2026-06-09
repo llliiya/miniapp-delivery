@@ -3,7 +3,7 @@ WORKDIR /build
 
 COPY miniapp-delivery/docker/pom-gateway.xml ./miniapp-deploy/pom.xml
 COPY miniapp-gateway ./miniapp-gateway
-RUN mvn -f miniapp-deploy/pom.xml -pl miniapp-gateway -DskipTests package
+RUN mvn -f miniapp-gateway/pom.xml -DskipTests package
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app

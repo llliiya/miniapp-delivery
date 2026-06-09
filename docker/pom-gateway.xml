@@ -20,8 +20,4 @@
         <spring.cloud.version>2023.0.5</spring.cloud.version>
         <lombok.version>1.18.42</lombok.version>
     </properties>
-
-    <modules>
-        <module>../miniapp-gateway</module>
-    </modules>
 </project>
