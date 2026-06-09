@@ -33,7 +33,7 @@ UI `http://localhost:5172`, API `http://localhost:8081/api/...`, Postgres `:5430
         /api/       → gateway:8080 → delivery-backend / account / notification
 ```
 
-Файлы: `delivery-frontend/default.conf.template`, `delivery-frontend/Dockerfile`.
+Файлы: `delivery-frontend/nginx.prod.conf` (volume в compose), `delivery-frontend/Dockerfile`.
 
 Gateway и backend **не** проброшены на хост — API только через `https://<DOMAIN>/api/...`.
 

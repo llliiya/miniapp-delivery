@@ -17,13 +17,9 @@ ENV VITE_DGIS_API_KEY=$VITE_DGIS_API_KEY
 
 RUN npm run build
 
+# nginx + статика SPA (как Dockerfile.dev); конфиг — nginx.prod.conf
 FROM nginx:1.27-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY default.conf.template /etc/nginx/templates/default.conf.template
-
-ENV DOMAIN=example.com
-ENV GATEWAY_HOST=gateway
-ENV NGINX_ENVSUBST_FILTER="^(DOMAIN|GATEWAY_HOST)$$"
-
+COPY nginx.prod.conf /etc/nginx/templates/default.conf.template
+ENV NGINX_ENVSUBST_FILTER="^(DOMAIN)$$"
 EXPOSE 80 443
-CMD ["nginx", "-g", "daemon off;"]
