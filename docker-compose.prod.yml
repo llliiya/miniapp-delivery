@@ -13,6 +13,8 @@ services:
       POSTGRES_DB: delivery
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: CHANGE_ME_strong_db_password
+    ports:
+      - "5432:5432"
     volumes:
       - delivery_prod_pg:/var/lib/postgresql/data
       - ./docker/init-schemas.sql:/docker-entrypoint-initdb.d/01-schemas.sql:ro
