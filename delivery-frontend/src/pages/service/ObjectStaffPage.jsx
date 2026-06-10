@@ -91,8 +91,9 @@ export default function ObjectStaffPage() {
     setMessageOk(false)
     const trimmedName = fullName.trim()
     const trimmedPhone = phone.trim()
-    if (!trimmedName || !trimmedPhone) {
-      setMessage('Заполните ФИО и телефон')
+    const trimmedEmail = email.trim()
+    if (!trimmedName || !trimmedPhone || !trimmedEmail) {
+      setMessage('Заполните ФИО, телефон и email')
       return
     }
     setSubmitting(true)
@@ -101,7 +102,7 @@ export default function ObjectStaffPage() {
         role,
         fullName: trimmedName,
         phone: trimmedPhone,
-        email: email.trim() || undefined,
+        email: trimmedEmail,
       })
       setCredentialsTitle('Сотрудник создан')
       setCredentialsIntro('Сотрудник добавлен в объект.')
@@ -253,12 +254,13 @@ export default function ObjectStaffPage() {
             <PhoneInput className="input" value={phone} onChange={setPhone} />
           </label>
           <label className="objects-form__label">
-            Email (необязательно)
+            Email
             <input
               type="email"
               className="input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </label>
           <label className="objects-form__label">

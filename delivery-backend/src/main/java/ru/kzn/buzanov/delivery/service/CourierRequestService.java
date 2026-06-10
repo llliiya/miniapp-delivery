@@ -22,6 +22,7 @@ import ru.kzn.buzanov.delivery.integration.account.AccountProvisionResult;
 import ru.kzn.buzanov.delivery.repository.CourierRequestRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
 import ru.kzn.buzanov.delivery.service.notification.CourierRequestNotificationService;
+import ru.kzn.buzanov.delivery.util.EmailRequirements;
 
 import java.time.Instant;
 import java.util.List;
@@ -32,13 +33,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CourierRequestService {
 
-    private static final int MAX_LOGIN_ATTEMPTS = 50;
-
     private final CourierRequestRepository requestRepository;
     private final OrganizationMemberRepository memberRepository;
     private final AccountUserClient accountUserClient;
     private final AccountProvisioningClient accountProvisioningClient;
-    private final CourierLoginService courierLoginService;
     private final MemberService memberService;
     private final DeliveryUserProfileService profileService;
     private final AccessControlService accessControl;
@@ -75,6 +73,7 @@ public class CourierRequestService {
     public CourierRequestDto create(CreateCourierRequestRequest request) {
         String fullName = request.fullName().trim();
         String phone = normalizePhone(request.phone());
+        String email = EmailRequirements.requireEmail(request.email());
         String city = request.city().trim();
         String comment = trimToNull(request.comment());
         String provider = normalizeProvider(request.messengerProvider());
@@ -102,6 +101,7 @@ public class CourierRequestService {
         entity.setId(UUID.randomUUID());
         entity.setFullName(fullName);
         entity.setPhone(phone);
+        entity.setEmail(email);
         entity.setCity(city);
         entity.setComment(comment);
         entity.setTransport(request.transport() != null && !request.transport().isBlank()
@@ -135,6 +135,11 @@ public class CourierRequestService {
         if (request.getStatus() != CourierRequestStatus.NEW) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Заявка уже обработана");
         }
+        String requestEmail = request.getEmail();
+        if (requestEmail == null || requestEmail.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "В заявке не указан email. Попросите курьера подать заявку заново.");
+        }
 
         boolean hasMessenger = request.getMessengerProvider() != null
                 && request.getMessengerExternalId() != null
@@ -142,7 +147,6 @@ public class CourierRequestService {
                 && !request.getMessengerExternalId().isBlank();
 
         Long courierUserId;
-        Long reservedPublicId = null;
 
         if (hasMessenger) {
             Optional<Long> existingUserId = accountUserClient.findUserIdByExternalIdentity(
@@ -162,9 +166,8 @@ public class CourierRequestService {
                 }
             } else {
                 AccountProvisionResult provisioned = provisionCourierAccount(
-                        request.getFullName(), request.getPhone(), null);
+                        request.getFullName(), request.getPhone(), requestEmail);
                 courierUserId = provisioned.userId();
-                reservedPublicId = CourierLoginService.parseLoginNumber(provisioned.login());
                 accountUserClient.linkMessengerIdentity(
                         courierUserId,
                         request.getMessengerProvider(),
@@ -172,17 +175,15 @@ public class CourierRequestService {
             }
         } else {
             AccountProvisionResult provisioned = provisionCourierAccount(
-                    request.getFullName(), request.getPhone(), null);
+                    request.getFullName(), request.getPhone(), requestEmail);
             courierUserId = provisioned.userId();
-            reservedPublicId = CourierLoginService.parseLoginNumber(provisioned.login());
         }
 
         var member = memberService.addMembershipForOrganization(
                 courierServiceId,
                 courierUserId,
                 MemberRole.courier,
-                request.getFullName().trim(),
-                reservedPublicId);
+                request.getFullName().trim());
 
         Instant now = Instant.now();
         request.setStatus(CourierRequestStatus.APPROVED);
@@ -228,20 +229,8 @@ public class CourierRequestService {
     }
 
     private AccountProvisionResult provisionCourierAccount(String fullName, String phone, String email) {
-        for (int attempt = 0; attempt < MAX_LOGIN_ATTEMPTS; attempt++) {
-            long candidateNumber = courierLoginService.reserveNextPublicId();
-            String login = CourierLoginService.formatLogin(candidateNumber);
-            try {
-                return accountProvisioningClient.provisionWebEmployee(
-                        AccountProvisionRequest.forCourier(fullName, phone, email, login));
-            } catch (ResponseStatusException ex) {
-                if (AccountProvisioningClient.isLoginConflict(ex)) {
-                    continue;
-                }
-                throw ex;
-            }
-        }
-        throw new ResponseStatusException(HttpStatus.CONFLICT, "Не удалось подобрать свободный логин для курьера");
+        return accountProvisioningClient.provisionWebEmployee(
+                AccountProvisionRequest.forCourier(fullName, phone, email));
     }
 
     private boolean hasActiveCourierMembership(Long userId) {
@@ -306,6 +295,7 @@ public class CourierRequestService {
                 entity.getId(),
                 entity.getFullName(),
                 entity.getPhone(),
+                entity.getEmail(),
                 entity.getCity(),
                 entity.getTransport(),
                 entity.getComment(),

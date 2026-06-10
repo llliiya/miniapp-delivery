@@ -216,3 +216,45 @@ export function approveCourierRequest(requestId, courierServiceId) {
     'PATCH',
   )
 }
+
+export function submitRestaurantRegistrationRequest(body) {
+  return publicDeliveryFetch('/public/restaurant-registration-requests', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function listRestaurantRegistrationRequests(courierServiceId) {
+  return deliveryApi(`/restaurant-registration-requests?courierServiceId=${courierServiceId}`)
+}
+
+export function getRestaurantRegistrationRequest(requestId, courierServiceId) {
+  return deliveryApi(
+    `/restaurant-registration-requests/${requestId}?courierServiceId=${courierServiceId}`,
+  )
+}
+
+export function markRestaurantRegistrationInProgress(requestId, courierServiceId) {
+  return deliveryApi(
+    `/restaurant-registration-requests/${requestId}/in-progress?courierServiceId=${courierServiceId}`,
+    'PATCH',
+  )
+}
+
+export function approveRestaurantRegistrationRequest(requestId, courierServiceId) {
+  return deliveryApi(
+    `/restaurant-registration-requests/${requestId}/approve?courierServiceId=${courierServiceId}`,
+    'PATCH',
+  )
+}
+
+export function rejectRestaurantRegistrationRequest(requestId, courierServiceId) {
+  return deliveryApi(
+    `/restaurant-registration-requests/${requestId}/reject?courierServiceId=${courierServiceId}`,
+    'PATCH',
+  )
+}
+
+export function fetchPartnerProgram(memberId) {
+  return deliveryApi(`/couriers/${memberId}/partner-program`)
+}

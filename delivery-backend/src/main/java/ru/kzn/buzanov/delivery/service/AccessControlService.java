@@ -159,20 +159,30 @@ public class AccessControlService {
         if (restaurant.getType() != OrganizationType.client_restaurant) {
             return false;
         }
-        Optional<OrganizationMember> direct = findMembership(userId, restaurant.getId());
-        if (direct.isPresent()
-                && direct.get().getStatus() == MemberStatus.active
-                && ORG_MANAGERS.contains(direct.get().getRole())) {
+        if (isRestaurantManager(userId, restaurant)) {
             return true;
         }
         if (restaurant.getCourierServiceId() != null) {
-            Optional<OrganizationMember> serviceMember =
-                    findMembership(userId, restaurant.getCourierServiceId());
-            return serviceMember.isPresent()
-                    && serviceMember.get().getStatus() == MemberStatus.active
-                    && SERVICE_STAFF.contains(serviceMember.get().getRole());
+            return isServiceStaffForCourierService(userId, restaurant.getCourierServiceId());
         }
         return false;
+    }
+
+    public boolean isRestaurantManager(Long userId, Organization restaurant) {
+        if (restaurant.getType() != OrganizationType.client_restaurant) {
+            return false;
+        }
+        Optional<OrganizationMember> direct = findMembership(userId, restaurant.getId());
+        return direct.isPresent()
+                && direct.get().getStatus() == MemberStatus.active
+                && ORG_MANAGERS.contains(direct.get().getRole());
+    }
+
+    public boolean isServiceStaffForCourierService(Long userId, UUID courierServiceId) {
+        Optional<OrganizationMember> serviceMember = findMembership(userId, courierServiceId);
+        return serviceMember.isPresent()
+                && serviceMember.get().getStatus() == MemberStatus.active
+                && SERVICE_STAFF.contains(serviceMember.get().getRole());
     }
 
     public void requireCanManagePickupPoints(Long userId, Organization restaurant) {

@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-order-created-by-organization
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: delivery_orders
+            columns:
+              - column:
+                  name: created_by_organization_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: delivery_orders
+            baseColumnNames: created_by_organization_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_delivery_orders_created_by_organization

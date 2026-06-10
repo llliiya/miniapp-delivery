@@ -24,8 +24,8 @@ public class OrderEventsController {
     @GetMapping(value = "/orders/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter orderEvents(HttpServletRequest request) {
         var user = CurrentUserHolder.require(request);
-        UUID courierServiceId = orderAccess.findCourierServiceIdForUser(user.userId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Нет курьерского доступа"));
-        return streamHub.subscribe(courierServiceId);
+        var subscription = orderAccess.resolveOrderEventSubscription(user.userId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Нет доступа к событиям заказов"));
+        return streamHub.subscribe(subscription);
     }
 }

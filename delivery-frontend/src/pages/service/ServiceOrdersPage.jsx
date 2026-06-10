@@ -111,14 +111,16 @@ export default function ServiceOrdersPage() {
           <h1 className="service-orders-page__title">Заказы</h1>
           <p className="service-orders-page__subtitle">Текущая ситуация по доставкам</p>
         </div>
-        {restaurantFilter ? (
-          <Link
-            to={`/service/orders/new?object=${restaurantFilter}`}
-            className="btn service-orders-page__new-btn"
-          >
-            + Новый заказ
-          </Link>
-        ) : null}
+        <Link
+          to={
+            restaurantFilter
+              ? `/service/orders/new?object=${restaurantFilter}`
+              : '/service/orders/new'
+          }
+          className="btn service-orders-page__new-btn"
+        >
+          + Новый заказ
+        </Link>
       </header>
 
       <ServiceOrdersStats stats={stats} loading={loading} />

@@ -2,6 +2,7 @@ package ru.kzn.buzanov.delivery.dto;
 
 import ru.kzn.buzanov.delivery.domain.OrderStatus;
 import ru.kzn.buzanov.delivery.domain.PriceSource;
+import ru.kzn.buzanov.delivery.domain.PublicationStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -34,7 +35,10 @@ public record OrderDto(
         String courierDisplayName,
         String restaurantName,
         Long createdByUserId,
+        UUID createdByOrganizationId,
+        String createdBySource,
         Instant createdAt,
+        PublicationStatus publicationStatus,
         Instant publishedAt,
         Instant acceptedAt,
         Instant completedAt,

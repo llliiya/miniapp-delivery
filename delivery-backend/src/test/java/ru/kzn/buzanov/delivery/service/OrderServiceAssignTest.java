@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.server.ResponseStatusException;
 import ru.kzn.buzanov.delivery.api.OrderConflictException;
 import ru.kzn.buzanov.delivery.domain.DeliveryOrder;
@@ -18,6 +19,7 @@ import ru.kzn.buzanov.delivery.service.notification.CourierMessengerNotification
 import ru.kzn.buzanov.delivery.service.publication.OrderChannelProjectionService;
 import ru.kzn.buzanov.delivery.service.publication.OrderPublicationService;
 import ru.kzn.buzanov.delivery.service.realtime.OrderAssignmentEventPublisher;
+import ru.kzn.buzanov.delivery.service.realtime.OrderPublicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -59,6 +61,12 @@ class OrderServiceAssignTest {
     private CourierMessengerNotificationService courierMessengerNotificationService;
     @Mock
     private OrderAssignmentEventPublisher assignmentEventPublisher;
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+    @Mock
+    private OrderPublicationEventPublisher publicationEventPublisher;
+    @Mock
+    private CourierBalanceService courierBalanceService;
 
     @InjectMocks
     private OrderService orderService;

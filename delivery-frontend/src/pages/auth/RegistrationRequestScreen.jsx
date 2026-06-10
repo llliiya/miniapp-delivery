@@ -16,6 +16,7 @@ function prefillNameFromMessenger(identity) {
 export default function RegistrationRequestScreen({ onBack, onSuccess, messengerIdentity }) {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [city, setCity] = useState('')
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -31,9 +32,14 @@ export default function RegistrationRequestScreen({ onBack, onSuccess, messenger
     e.preventDefault()
     setError('')
     const trimmedName = fullName.trim()
+    const trimmedEmail = email.trim()
     const trimmedCity = city.trim()
-    if (!trimmedName || !phone.trim() || !trimmedCity) {
-      setError('Заполните ФИО, телефон и город')
+    if (!trimmedName || !phone.trim() || !trimmedEmail || !trimmedCity) {
+      setError('Заполните ФИО, телефон, email и город')
+      return
+    }
+    if (!trimmedEmail.includes('@')) {
+      setError('Введите корректный email')
       return
     }
     setSubmitting(true)
@@ -41,6 +47,7 @@ export default function RegistrationRequestScreen({ onBack, onSuccess, messenger
       const body = {
         fullName: trimmedName,
         phone: phone.trim(),
+        email: trimmedEmail,
         city: trimmedCity,
         comment: comment.trim() || null,
       }
@@ -84,7 +91,18 @@ export default function RegistrationRequestScreen({ onBack, onSuccess, messenger
         autoComplete="name"
       />
       <label className="auth-label">Телефон</label>
-      <PhoneInput value={phone} onChange={setPhone} required />
+      <PhoneInput className="auth-input" value={phone} onChange={setPhone} required />
+      <label className="auth-label">Email</label>
+      <input
+        type="email"
+        className="auth-input"
+        placeholder="ivan@mail.ru"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        autoComplete="email"
+      />
+      <p className="auth-hint">На этот адрес будут приходить коды для входа</p>
       <label className="auth-label">Город</label>
       <input
         type="text"

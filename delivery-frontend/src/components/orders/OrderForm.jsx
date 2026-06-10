@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { createOrder, listPickupPoints } from '../../api/deliveryService.js'
 import AddressSuggestInput from '../AddressSuggestInput.jsx'
 import PhoneInput from '../PhoneInput.jsx'
+import RestaurantSearchSelect from './RestaurantSearchSelect.jsx'
 import { formatShortAddress } from '../../utils/formatShortAddress.js'
+import './RestaurantSearchSelect.css'
 
 const DELIVERY_MODES = {
   ASAP: 'asap',
@@ -28,19 +30,19 @@ const emptyForm = {
 
 /**
  * @param {{
+ *   mode: 'restaurant' | 'service'
  *   restaurantId: string
  *   restaurantName?: string
- *   showRestaurantSelect?: boolean
  *   restaurants?: Array<{ id: string, name: string }>
  *   onRestaurantChange?: (id: string) => void
  *   pickupPointsPath: string
  *   onCreated: (res: { order: { id: string }, warnings?: string[] }) => void
  * }} props
  */
-export default function CreateOrderForm({
+export default function OrderForm({
+  mode,
   restaurantId,
   restaurantName,
-  showRestaurantSelect = false,
   restaurants = [],
   onRestaurantChange,
   pickupPointsPath,
@@ -51,6 +53,13 @@ export default function CreateOrderForm({
   const [form, setForm] = useState(emptyForm)
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
+
+  const isServiceMode = mode === 'service'
+
+  useEffect(() => {
+    setForm(emptyForm)
+    setMessage('')
+  }, [restaurantId])
 
   const loadPoints = useCallback(async () => {
     if (!restaurantId) {
@@ -156,32 +165,29 @@ export default function CreateOrderForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="card restaurant-order-form">
-      {(showRestaurantSelect || restaurantName) && (
-        <section className="restaurant-order-form__section">
-          <h2 className="restaurant-order-form__section-title">Объект</h2>
-          {showRestaurantSelect ? (
-            <label className="restaurant-order-form__label">
-              Объект
-              <select
-                className="input"
-                value={restaurantId || ''}
-                onChange={(e) => onRestaurantChange?.(e.target.value)}
-                required
-              >
-                <option value="">Выберите объект</option>
-                {restaurants.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <p className="restaurant-order-form__object-name">{restaurantName}</p>
-          )}
-        </section>
-      )}
+    <form onSubmit={onSubmit} className="card restaurant-order-form order-form">
+      <section className="restaurant-order-form__section">
+        <h2 className="restaurant-order-form__section-title">Объект</h2>
+        {isServiceMode ? (
+          <label className="restaurant-order-form__label">
+            Объект *
+            <RestaurantSearchSelect
+              options={restaurants}
+              value={restaurantId || ''}
+              onChange={(id) => onRestaurantChange?.(id)}
+              required
+              placeholder="Начните вводить название"
+            />
+          </label>
+        ) : (
+          <p className="order-form__object-name">
+            <span>{restaurantName || '—'}</span>
+            <span className="order-form__object-lock" aria-hidden="true">
+              🔒
+            </span>
+          </p>
+        )}
+      </section>
 
       <section className="restaurant-order-form__section">
         <h2 className="restaurant-order-form__section-title">Откуда забрать</h2>
@@ -355,7 +361,7 @@ export default function CreateOrderForm({
       {message && <p className="restaurant-order-form__error">{message}</p>}
 
       <button type="submit" className="btn restaurant-order-form__submit" disabled={saving || !canSubmit}>
-        {saving ? 'Создание…' : 'Создать и опубликовать'}
+        {saving ? 'Создание…' : 'Создать заказ'}
       </button>
     </form>
   )

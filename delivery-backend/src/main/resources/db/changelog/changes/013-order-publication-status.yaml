@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-order-publication-status
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: delivery_orders
+            columns:
+              - column:
+                  name: publication_status
+                  type: varchar(32)
+                  defaultValue: pending
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >
+              UPDATE delivery.delivery_orders
+              SET publication_status = 'published'
+              WHERE published_at IS NOT NULL
+        - sql:
+            sql: >
+              UPDATE delivery.delivery_orders o
+              SET publication_status = 'failed'
+              WHERE o.published_at IS NULL
+                AND o.publication_status = 'pending'
+                AND EXISTS (
+                  SELECT 1
+                  FROM delivery.order_channel_posts p
+                  WHERE p.order_id = o.id
+                    AND p.status = 'failed'
+                )

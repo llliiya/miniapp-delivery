@@ -20,19 +20,33 @@ function friendlyApiErrorMessage(status, data, fallback = 'Не удалось �
   return fallback
 }
 
+async function fetchWithAuth(url, method, body) {
+  const buildInit = (token) => {
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+    return {
+      method,
+      headers,
+      credentials: 'include',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }
+  }
+
+  let res = await fetch(url, buildInit(getToken()))
+  if (res.status === 401) {
+    const refreshed = await refreshAccessToken()
+    if (refreshed) {
+      res = await fetch(url, buildInit(refreshed))
+    }
+  }
+  return res
+}
+
 export async function accountApi(path, method = 'GET', body) {
   const url = `${API_URL}${path.startsWith('/') ? path : `/${path}`}`
-  const headers = { 'Content-Type': 'application/json' }
-  const token = getToken()
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-  const res = await fetch(url, {
-    method,
-    headers,
-    credentials: 'include',
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  })
+  const res = await fetchWithAuth(url, method, body)
   if (!res.ok) {
     let data = null
     try {
@@ -51,17 +65,7 @@ export async function accountApi(path, method = 'GET', body) {
 
 export async function deliveryApi(path, method = 'GET', body) {
   const url = `${DELIVERY_API_URL}${path.startsWith('/') ? path : `/${path}`}`
-  const headers = { 'Content-Type': 'application/json' }
-  const token = getToken()
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-  const res = await fetch(url, {
-    method,
-    headers,
-    credentials: 'include',
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  })
+  const res = await fetchWithAuth(url, method, body)
   if (!res.ok) {
     let data = null
     try {

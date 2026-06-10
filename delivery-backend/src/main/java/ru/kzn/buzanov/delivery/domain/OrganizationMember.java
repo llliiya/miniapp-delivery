@@ -26,10 +26,7 @@ public class OrganizationMember {
     @Column(nullable = false)
     private UUID id;
 
-    /**
-     * DB-generated unless set explicitly before save (courier reserved public id).
-     * insertable stays true so courier login can match organization_members.public_id.
-     */
+    /** DB-generated sequential id for display within an organization. */
     @Generated(event = EventType.INSERT)
     @Column(name = "public_id", updatable = false)
     private Long publicId;

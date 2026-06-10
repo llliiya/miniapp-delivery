@@ -61,9 +61,13 @@ export default function CourierOrdersPage() {
       return undefined
     }
     const controller = new AbortController()
-    subscribeOrderEvents(() => {
-      reload()
-    }, controller.signal)
+    subscribeOrderEvents(
+      {
+        onAssigned: () => reload(),
+        onPublicationUpdated: () => reload(),
+      },
+      controller.signal,
+    )
     return () => controller.abort()
   }, [isPendingCourier, isBlockedCourier, reload])
 

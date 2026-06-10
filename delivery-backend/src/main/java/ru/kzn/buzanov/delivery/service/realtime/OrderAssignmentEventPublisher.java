@@ -19,6 +19,8 @@ public class OrderAssignmentEventPublisher {
                 order.getId(),
                 order.getCourierUserId(),
                 order.getStatus());
-        streamHub.publishOrderAssigned(order.getCourierServiceId(), event);
+        if (order.getCourierServiceId() != null) {
+            streamHub.publishOrderAssigned(order.getCourierServiceId(), event);
+        }
     }
 }

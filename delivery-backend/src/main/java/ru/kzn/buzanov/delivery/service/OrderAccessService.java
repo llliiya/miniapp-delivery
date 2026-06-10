@@ -11,6 +11,7 @@ import ru.kzn.buzanov.delivery.domain.OrderStatus;
 import ru.kzn.buzanov.delivery.domain.Organization;
 import ru.kzn.buzanov.delivery.domain.OrganizationMember;
 import ru.kzn.buzanov.delivery.domain.OrganizationType;
+import ru.kzn.buzanov.delivery.dto.OrderEventSubscription;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
 
 import java.util.List;
@@ -30,9 +31,25 @@ public class OrderAccessService {
         if (!restaurant.isActive()) {
             throw new ResponseStatusException(HttpStatus.GONE, "Объект деактивирован. Новые заказы создавать нельзя.");
         }
-        if (!accessControl.canManageRestaurantResource(userId, restaurant)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Недостаточно прав для создания заказа");
+        if (accessControl.isRestaurantManager(userId, restaurant)) {
+            return;
         }
+        if (restaurant.getCourierServiceId() != null
+                && accessControl.isServiceStaffForCourierService(userId, restaurant.getCourierServiceId())) {
+            return;
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Недостаточно прав для создания заказа");
+    }
+
+    public UUID resolveCreatorOrganizationId(Long userId, Organization restaurant) {
+        if (accessControl.isRestaurantManager(userId, restaurant)) {
+            return restaurant.getId();
+        }
+        if (restaurant.getCourierServiceId() != null
+                && accessControl.isServiceStaffForCourierService(userId, restaurant.getCourierServiceId())) {
+            return restaurant.getCourierServiceId();
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Недостаточно прав для создания заказа");
     }
 
     public void requireCanViewOrder(Long userId, DeliveryOrder order) {
@@ -108,6 +125,45 @@ public class OrderAccessService {
             }
             Organization org = accessControl.requireOrganization(member.getOrganizationId());
             if (org.getType() == OrganizationType.courier_service) {
+                return Optional.of(org.getId());
+            }
+        }
+        return Optional.empty();
+    }
+
+    public Optional<OrderEventSubscription> resolveOrderEventSubscription(Long userId) {
+        Optional<UUID> courierServiceId = findCourierServiceIdForUser(userId);
+        if (courierServiceId.isPresent()) {
+            return Optional.of(new OrderEventSubscription(courierServiceId.get(), null));
+        }
+        UUID serviceId = findServiceStaffCourierServiceIdForUser(userId).orElse(null);
+        UUID restaurantId = findRestaurantIdForUser(userId).orElse(null);
+        if (serviceId == null && restaurantId == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new OrderEventSubscription(serviceId, restaurantId));
+    }
+
+    private Optional<UUID> findServiceStaffCourierServiceIdForUser(Long userId) {
+        List<OrganizationMember> members = memberRepository.findByUserIdAndStatus(userId, MemberStatus.active);
+        for (OrganizationMember member : members) {
+            if (member.getRole() == MemberRole.courier) {
+                continue;
+            }
+            Organization org = accessControl.requireOrganization(member.getOrganizationId());
+            if (org.getType() == OrganizationType.courier_service
+                    && accessControl.isServiceStaffForCourierService(userId, org.getId())) {
+                return Optional.of(org.getId());
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<UUID> findRestaurantIdForUser(Long userId) {
+        List<OrganizationMember> members = memberRepository.findByUserIdAndStatus(userId, MemberStatus.active);
+        for (OrganizationMember member : members) {
+            Organization org = accessControl.requireOrganization(member.getOrganizationId());
+            if (org.getType() == OrganizationType.client_restaurant) {
                 return Optional.of(org.getId());
             }
         }

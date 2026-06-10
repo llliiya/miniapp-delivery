@@ -2,6 +2,7 @@ package ru.kzn.buzanov.delivery.service;
 
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,8 @@ import ru.kzn.buzanov.delivery.domain.Organization;
 import ru.kzn.buzanov.delivery.domain.OrganizationMember;
 import ru.kzn.buzanov.delivery.domain.PickupPoint;
 import ru.kzn.buzanov.delivery.domain.PriceSource;
+import ru.kzn.buzanov.delivery.domain.PublicationStatus;
+import ru.kzn.buzanov.delivery.event.OrderCreatedEvent;
 import ru.kzn.buzanov.delivery.dto.CreateOrderResponseDto;
 import ru.kzn.buzanov.delivery.dto.OrderDto;
 import ru.kzn.buzanov.delivery.dto.PatchOrderResponseDto;
@@ -30,6 +33,7 @@ import ru.kzn.buzanov.delivery.service.notification.CourierMessengerNotification
 import ru.kzn.buzanov.delivery.service.publication.OrderChannelProjectionService;
 import ru.kzn.buzanov.delivery.service.publication.OrderPublicationService;
 import ru.kzn.buzanov.delivery.service.realtime.OrderAssignmentEventPublisher;
+import ru.kzn.buzanov.delivery.service.realtime.OrderPublicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -44,6 +48,7 @@ public class OrderService {
 
     private final DeliveryOrderRepository orderRepository;
     private final CourierProfileRepository courierProfileRepository;
+    private final CourierBalanceService courierBalanceService;
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository memberRepository;
     private final PickupPointRepository pickupPointRepository;
@@ -54,6 +59,8 @@ public class OrderService {
     private final OrderChannelProjectionService channelProjectionService;
     private final CourierMessengerNotificationService courierMessengerNotificationService;
     private final OrderAssignmentEventPublisher assignmentEventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final OrderPublicationEventPublisher publicationEventPublisher;
 
     @Transactional
     public CreateOrderResponseDto create(Long userId, CreateOrderRequest request) {
@@ -82,14 +89,14 @@ public class OrderService {
         order.setCustomerPhone(request.customerPhone().trim());
         order.setComment(trimToNull(request.comment()));
         order.setStatus(OrderStatus.waiting_for_courier);
+        order.setPublicationStatus(PublicationStatus.pending);
         order.setCreatedByUserId(userId);
+        order.setCreatedByOrganizationId(orderAccess.resolveCreatorOrganizationId(userId, restaurant));
         order.setCreatedAt(now);
         order = orderRepository.saveAndFlush(order);
         order = orderRepository.findById(order.getId()).orElseThrow();
-
-        List<String> warnings = new ArrayList<>(publicationService.publishNewOrder(order));
-        order = orderRepository.save(order);
-        return new CreateOrderResponseDto(toDto(order, userId), warnings);
+        applicationEventPublisher.publishEvent(new OrderCreatedEvent(order.getId()));
+        return new CreateOrderResponseDto(toDto(order, userId), List.of());
     }
 
     @Transactional(readOnly = true)
@@ -117,8 +124,13 @@ public class OrderService {
         DeliveryOrder order = requireOrder(orderId);
         orderAccess.requireCanManageOrder(userId, order);
         orderAccess.requireRepublishable(order);
-        List<String> warnings = new ArrayList<>(publicationService.republishOrder(order));
+        order.setPublicationStatus(PublicationStatus.processing);
         order = orderRepository.save(order);
+        List<String> warnings = new ArrayList<>(publicationService.republishOrder(order));
+        order = orderRepository.findById(orderId).orElseThrow();
+        order.setPublicationStatus(publicationService.resolvePublicationStatusAfterPublish(warnings, order));
+        order = orderRepository.save(order);
+        publicationEventPublisher.publishUpdated(order);
         return new RepublishOrderResponseDto(toDto(order, userId), warnings);
     }
 
@@ -272,6 +284,7 @@ public class OrderService {
         if (newStatus == OrderStatus.completed) {
             order.setCompletedAt(now);
             incrementCompletedOrdersCount(order);
+            courierBalanceService.accrueOnOrderCompleted(order);
         } else if (newStatus == OrderStatus.cancelled) {
             order.setCancelledAt(now);
         }
@@ -447,7 +460,10 @@ public class OrderService {
                 courierDisplayName,
                 restaurantName,
                 order.getCreatedByUserId(),
+                order.getCreatedByOrganizationId(),
+                resolveCreatedBySource(order),
                 order.getCreatedAt(),
+                order.getPublicationStatus(),
                 order.getPublishedAt(),
                 order.getAcceptedAt(),
                 order.getCompletedAt(),
@@ -506,7 +522,10 @@ public class OrderService {
                 dto.courierDisplayName(),
                 dto.restaurantName(),
                 dto.createdByUserId(),
+                dto.createdByOrganizationId(),
+                dto.createdBySource(),
                 dto.createdAt(),
+                dto.publicationStatus(),
                 dto.publishedAt(),
                 dto.acceptedAt(),
                 dto.completedAt(),
@@ -514,6 +533,20 @@ public class OrderService {
                 dto.publicationFailures(),
                 dto.canRepublish()
         );
+    }
+
+    private static String resolveCreatedBySource(DeliveryOrder order) {
+        UUID creatorOrgId = order.getCreatedByOrganizationId();
+        if (creatorOrgId == null) {
+            return null;
+        }
+        if (creatorOrgId.equals(order.getRestaurantId())) {
+            return "restaurant";
+        }
+        if (creatorOrgId.equals(order.getCourierServiceId())) {
+            return "courier_service";
+        }
+        return null;
     }
 
     private static String trimToNull(String value) {

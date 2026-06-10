@@ -93,8 +93,15 @@ public class DeliveryOrder {
     @Column(name = "created_by_user_id", nullable = false)
     private Long createdByUserId;
 
+    @Column(name = "created_by_organization_id")
+    private UUID createdByOrganizationId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "publication_status", nullable = false, length = 32)
+    private PublicationStatus publicationStatus = PublicationStatus.pending;
 
     @Column(name = "published_at")
     private Instant publishedAt;

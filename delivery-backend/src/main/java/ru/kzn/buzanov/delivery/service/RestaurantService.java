@@ -16,6 +16,7 @@ import ru.kzn.buzanov.delivery.dto.request.CreateRestaurantRequest;
 import ru.kzn.buzanov.delivery.dto.request.PatchOrganizationRequest;
 import ru.kzn.buzanov.delivery.integration.AccountProvisioningClient;
 import ru.kzn.buzanov.delivery.integration.account.AccountProvisionRequest;
+import ru.kzn.buzanov.delivery.util.EmailRequirements;
 import ru.kzn.buzanov.delivery.integration.account.AccountProvisionResult;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationRepository;
@@ -36,16 +37,26 @@ public class RestaurantService {
     private final MemberService memberService;
     private final AccountProvisioningClient accountProvisioningClient;
     private final DeliveryDtoMapper mapper;
+    private final RestaurantRegistrationAuditService registrationAuditService;
 
     @Transactional
     public CreateRestaurantResponse create(Long userId, CreateRestaurantRequest request) {
         if (request.isProvisioningFlow()) {
-            return createWithOwnerProvisioning(userId, request);
+            return createWithOwnerProvisioning(userId, request, true);
         }
         return new CreateRestaurantResponse(createLegacy(userId, request), null);
     }
 
-    private CreateRestaurantResponse createWithOwnerProvisioning(Long actorUserId, CreateRestaurantRequest request) {
+    @Transactional
+    public CreateRestaurantResponse createForRegistrationApproval(Long userId, CreateRestaurantRequest request) {
+        if (!request.isProvisioningFlow()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Для одобрения заявки нужны данные владельца");
+        }
+        return createWithOwnerProvisioning(userId, request, false);
+    }
+
+    private CreateRestaurantResponse createWithOwnerProvisioning(
+            Long actorUserId, CreateRestaurantRequest request, boolean recordAudit) {
         accessControl.requireServiceStaff(actorUserId, request.courierServiceId());
         var owner = request.owner();
         // TECH-DEBT: account provisioning commits before delivery TX. On failure after provision,
@@ -54,7 +65,7 @@ public class RestaurantService {
                 AccountProvisionRequest.forRestaurantOwner(
                         owner.fullName().trim(),
                         owner.phone().trim(),
-                        owner.email(),
+                        EmailRequirements.requireEmail(owner.email()),
                         request.name().trim()));
 
         Instant now = Instant.now();
@@ -78,6 +89,16 @@ public class RestaurantService {
         OrganizationDto object = mapper.toOrganizationDto(org);
         ProvisioningCredentialsDto ownerCredentials = ProvisioningCredentialsDto.fromProvision(
                 provisioned.login(), provisioned.temporaryPassword());
+        if (recordAudit) {
+            registrationAuditService.recordAdminCreation(
+                    org.getId(),
+                    request.name().trim(),
+                    null,
+                    owner.fullName().trim(),
+                    owner.phone().trim(),
+                    EmailRequirements.requireEmail(owner.email()),
+                    actorUserId);
+        }
         return new CreateRestaurantResponse(object, ownerCredentials);
     }
 

@@ -17,6 +17,7 @@ import ru.kzn.buzanov.delivery.dto.request.PatchCourierRequest;
 import ru.kzn.buzanov.delivery.integration.AccountProvisioningClient;
 import ru.kzn.buzanov.delivery.integration.AccountUserClient;
 import ru.kzn.buzanov.delivery.integration.account.AccountProvisionRequest;
+import ru.kzn.buzanov.delivery.util.EmailRequirements;
 import ru.kzn.buzanov.delivery.integration.account.AccountProvisionResult;
 import ru.kzn.buzanov.delivery.repository.CourierProfileRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
@@ -29,8 +30,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CourierService {
 
-    private static final int MAX_LOGIN_ATTEMPTS = 50;
-
     private final OrganizationMemberRepository memberRepository;
     private final CourierProfileRepository courierProfileRepository;
     private final AccessControlService accessControl;
@@ -38,7 +37,6 @@ public class CourierService {
     private final DeliveryUserProfileService profileService;
     private final AccountUserClient accountUserClient;
     private final AccountProvisioningClient accountProvisioningClient;
-    private final CourierLoginService courierLoginService;
     private final DeliveryDtoMapper mapper;
 
     @Transactional(readOnly = true)
@@ -66,16 +64,14 @@ public class CourierService {
         AccountProvisionResult provisioned = provisionCourierAccount(
                 request.fullName().trim(),
                 request.phone().trim(),
-                request.email());
+                EmailRequirements.requireEmail(request.email()));
         assertNotAlreadyMember(request.courierServiceId(), provisioned.userId());
 
-        Long reservedPublicId = CourierLoginService.parseLoginNumber(provisioned.login());
         var member = memberService.addMembershipForOrganization(
                 request.courierServiceId(),
                 provisioned.userId(),
                 MemberRole.courier,
-                request.fullName().trim(),
-                reservedPublicId);
+                request.fullName().trim());
         OrganizationMember organizationMember = memberRepository.findById(member.id()).orElseThrow();
         CourierDto courier = toCourierDto(organizationMember, request.courierServiceId());
         ProvisioningCredentialsDto credentials = ProvisioningCredentialsDto.fromProvision(
@@ -84,21 +80,8 @@ public class CourierService {
     }
 
     private AccountProvisionResult provisionCourierAccount(String fullName, String phone, String email) {
-        for (int attempt = 0; attempt < MAX_LOGIN_ATTEMPTS; attempt++) {
-            long candidateNumber = courierLoginService.reserveNextPublicId();
-            String login = CourierLoginService.formatLogin(candidateNumber);
-            try {
-                return accountProvisioningClient.provisionWebEmployee(
-                        AccountProvisionRequest.forCourier(fullName, phone, email, login));
-            } catch (ResponseStatusException ex) {
-                if (AccountProvisioningClient.isLoginConflict(ex)) {
-                    continue;
-                }
-                throw ex;
-            }
-        }
-        throw new ResponseStatusException(
-                HttpStatus.CONFLICT, "Не удалось подобрать свободный логин для курьера");
+        return accountProvisioningClient.provisionWebEmployee(
+                AccountProvisionRequest.forCourier(fullName, phone, email));
     }
 
     private CourierDto createLegacy(Long actorUserId, CreateCourierRequest request) {

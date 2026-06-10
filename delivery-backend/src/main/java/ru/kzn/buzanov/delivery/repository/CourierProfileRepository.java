@@ -9,4 +9,8 @@ import java.util.UUID;
 public interface CourierProfileRepository extends JpaRepository<CourierProfile, UUID> {
 
     Optional<CourierProfile> findByMemberId(UUID memberId);
+
+    Optional<CourierProfile> findByPartnerCode(String partnerCode);
+
+    boolean existsByPartnerCode(String partnerCode);
 }

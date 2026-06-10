@@ -13,7 +13,28 @@ const useLocalProxy =
   typeof devApiBase === 'string' &&
   (devApiBase === '' || devApiBase.includes('localhost') || devApiBase.startsWith('http://127.0.0.1'))
 
-export const API_BASE_URL = IS_DEV && useLocalProxy ? '' : devApiBase || ''
+function resolveApiBaseUrl() {
+  if (IS_DEV && useLocalProxy) {
+    return ''
+  }
+  if (!devApiBase) {
+    return ''
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const configured = new URL(devApiBase)
+      if (configured.origin !== window.location.origin) {
+        // UI отдаётся с тем же хостом, nginx проксирует /api — не уходим на другой поддомен.
+        return window.location.origin
+      }
+    } catch {
+      // ignore invalid VITE_API_BASE_URL
+    }
+  }
+  return devApiBase
+}
+
+export const API_BASE_URL = resolveApiBaseUrl()
 export const API_URL = `${API_BASE_URL}/api`
 export const DELIVERY_API_URL = `${API_URL}/delivery`
 export const USE_NGROK_HEADER = false

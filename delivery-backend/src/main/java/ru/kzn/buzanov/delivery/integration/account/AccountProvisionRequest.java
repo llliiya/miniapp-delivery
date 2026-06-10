@@ -10,6 +10,10 @@ public record AccountProvisionRequest(
         String loginBase,
         String login
 ) {
+    public static AccountProvisionRequest forCourier(String fullName, String phone, String email) {
+        return forCourier(fullName, phone, email, null);
+    }
+
     public static AccountProvisionRequest forCourier(String fullName, String phone, String email, String login) {
         return new AccountProvisionRequest(
                 fullName, phone, email, true, "delivery-backend", "courier", null, login);

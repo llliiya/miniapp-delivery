@@ -111,8 +111,9 @@ export default function ServiceCouriersPage() {
     setMessageOk(false)
     const trimmedName = fullName.trim()
     const trimmedPhone = phone.trim()
-    if (!trimmedName || !trimmedPhone) {
-      setMessage('Заполните ФИО и телефон')
+    const trimmedEmail = email.trim()
+    if (!trimmedName || !trimmedPhone || !trimmedEmail) {
+      setMessage('Заполните ФИО, телефон и email')
       return
     }
     if (!courierServiceId) {
@@ -125,7 +126,7 @@ export default function ServiceCouriersPage() {
         courierServiceId,
         fullName: trimmedName,
         phone: trimmedPhone,
-        email: email.trim() || undefined,
+        email: trimmedEmail,
       })
       setCredentialsTitle('Курьер создан')
       setCredentialsIntro('Курьер добавлен в службу.')
@@ -258,6 +259,9 @@ export default function ServiceCouriersPage() {
             <div key={app.id} className="card" style={{ marginTop: 12 }}>
               <strong>{app.fullName}</strong>
               <p className="muted" style={{ margin: '6px 0' }}>Телефон: {app.phone}</p>
+              {app.email && (
+                <p className="muted" style={{ margin: '6px 0' }}>Email: {app.email}</p>
+              )}
               <p className="muted" style={{ margin: '6px 0' }}>Город: {app.city}</p>
               {app.transport && (
                 <p className="muted" style={{ margin: '6px 0' }}>Транспорт: {app.transport}</p>
@@ -335,7 +339,7 @@ export default function ServiceCouriersPage() {
             style={{ width: '100%', marginBottom: 12 }}
           />
           <label className="muted" style={{ display: 'block', marginBottom: 4 }}>
-            Email (необязательно)
+            Email
           </label>
           <input
             type="email"
@@ -344,6 +348,7 @@ export default function ServiceCouriersPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{ width: '100%', marginBottom: 12 }}
+            required
           />
           <div className="form-actions">
             <button type="submit" className="btn" disabled={submitting}>

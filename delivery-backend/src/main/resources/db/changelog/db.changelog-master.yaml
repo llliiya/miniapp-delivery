@@ -32,3 +32,21 @@ databaseChangeLog:
   - include:
       file: changes/011-unify-courier-requests.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/012-order-created-by-organization.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/013-order-publication-status.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/014-courier-request-email.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/015-balance-transaction-order-unique.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/016-restaurant-registration-partner.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/017-backfill-courier-partner-codes.yaml
+      relativeToChangelogFile: true

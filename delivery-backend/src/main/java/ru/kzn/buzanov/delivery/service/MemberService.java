@@ -18,6 +18,7 @@ import ru.kzn.buzanov.delivery.dto.request.AddMemberRequest;
 import ru.kzn.buzanov.delivery.dto.request.PatchMemberRequest;
 import ru.kzn.buzanov.delivery.integration.AccountProvisioningClient;
 import ru.kzn.buzanov.delivery.integration.account.AccountProvisionRequest;
+import ru.kzn.buzanov.delivery.util.EmailRequirements;
 import ru.kzn.buzanov.delivery.integration.account.AccountProvisionResult;
 import ru.kzn.buzanov.delivery.repository.CourierProfileRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
@@ -38,6 +39,7 @@ public class MemberService {
 
     private final OrganizationMemberRepository memberRepository;
     private final CourierProfileRepository courierProfileRepository;
+    private final PartnerCodeService partnerCodeService;
     private final AccessControlService accessControl;
     private final DeliveryUserProfileService profileService;
     private final AccountProvisioningClient accountProvisioningClient;
@@ -117,16 +119,17 @@ public class MemberService {
             accessControl.validateRoleForOrganization(org, request.role());
         }
 
+        String email = EmailRequirements.requireEmail(request.email());
         AccountProvisionRequest provisionRequest = request.role() == MemberRole.owner
                 ? AccountProvisionRequest.forRestaurantOwner(
                         request.fullName().trim(),
                         request.phone().trim(),
-                        request.email(),
+                        email,
                         org.getName())
                 : AccountProvisionRequest.forRestaurantManager(
                         request.fullName().trim(),
                         request.phone().trim(),
-                        request.email(),
+                        email,
                         org.getName());
         AccountProvisionResult provisioned = accountProvisioningClient.provisionWebEmployee(provisionRequest);
         MemberDto member = createMembership(
@@ -233,16 +236,16 @@ public class MemberService {
     }
 
     private void ensureCourierProfile(UUID memberId, Instant now) {
-        if (courierProfileRepository.findByMemberId(memberId).isPresent()) {
-            return;
+        if (courierProfileRepository.findByMemberId(memberId).isEmpty()) {
+            CourierProfile profile = new CourierProfile();
+            profile.setId(UUID.randomUUID());
+            profile.setMemberId(memberId);
+            profile.setBalance(BigDecimal.ZERO);
+            profile.setCompletedOrdersCount(0);
+            profile.setUpdatedAt(now);
+            courierProfileRepository.save(profile);
         }
-        CourierProfile profile = new CourierProfile();
-        profile.setId(UUID.randomUUID());
-        profile.setMemberId(memberId);
-        profile.setBalance(BigDecimal.ZERO);
-        profile.setCompletedOrdersCount(0);
-        profile.setUpdatedAt(now);
-        courierProfileRepository.save(profile);
+        partnerCodeService.ensurePartnerCode(memberId);
     }
 
     private static String resolveDisplayName(String displayName, String fallback) {

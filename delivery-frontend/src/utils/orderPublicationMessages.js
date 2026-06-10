@@ -2,6 +2,10 @@ export const NO_ACTIVE_CHANNELS_WARNING = 'no_active_channels'
 export const PUBLICATION_FAILED_WARNING = 'publication_failed'
 export const PUBLICATION_PARTIAL_FAILED_WARNING = 'publication_partial_failed'
 
+export const ORDER_CREATED_MESSAGE = 'Заказ создан'
+
+export const ORDER_PUBLISHED_MESSAGE = 'Заказ опубликован'
+
 export const ORDER_CREATED_PUBLISHED_MESSAGE = 'Заказ создан и опубликован'
 
 export const ORDER_CREATED_NOT_PUBLISHED_MESSAGE =
@@ -67,6 +71,8 @@ function publicationResultMessage(warnings, messages) {
 
 export function isOrderPublicationSuccessMessage(message) {
   return (
+    message === ORDER_CREATED_MESSAGE ||
+    message === ORDER_PUBLISHED_MESSAGE ||
     message === ORDER_CREATED_PUBLISHED_MESSAGE ||
     message === ORDER_REPUBLISHED_MESSAGE ||
     message === ORDER_UPDATED_PUBLISHED_MESSAGE
@@ -81,6 +87,10 @@ export function formatPlatformError(platform, errorMessage) {
 }
 
 export function shouldShowPublicationFailureBlock(order) {
-  if (!order?.canRepublish) return false
-  return !order.publishedAt || (order.publicationFailures?.length ?? 0) > 0
+  if (!order) return false
+  if (order.publicationStatus === 'processing' || order.publicationStatus === 'pending') {
+    return false
+  }
+  if (!order.canRepublish) return false
+  return order.publicationStatus === 'failed' || (order.publicationFailures?.length ?? 0) > 0
 }

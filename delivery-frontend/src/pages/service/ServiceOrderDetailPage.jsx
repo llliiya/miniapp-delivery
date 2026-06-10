@@ -1,21 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { cancelOrder, getOrder, patchOrder } from '../../api/deliveryService.js'
 import OrderEditForm, { normalizeOrderPhone } from '../../components/orders/OrderEditForm.jsx'
 import OrderPublicationFailureBlock from '../../components/orders/OrderPublicationFailureBlock.jsx'
 import OrderDetailView from '../shared/OrderDetailView.jsx'
+import { useOrderPublicationSse } from '../../hooks/useOrderPublicationSse.js'
 import {
   isOrderPublicationSuccessMessage,
+  ORDER_PUBLISHED_MESSAGE,
   orderUpdatedMessage,
   shouldShowPublicationFailureBlock,
 } from '../../utils/orderPublicationMessages.js'
+import { PUBLICATION_STATUS } from '../../utils/publicationStatus.js'
 import { canCancelOrder, canEditOrder, toDatetimeLocalValue } from '../../utils/orderStatus.js'
 
 export default function ServiceOrderDetailPage({ editMode = false }) {
   const { orderId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const skipNextLoadRef = useRef(false)
-  const [banner, setBanner] = useState('')
+  const [banner, setBanner] = useState(location.state?.createdMessage || '')
   const [order, setOrder] = useState(null)
   const [form, setForm] = useState(null)
   const [message, setMessage] = useState('')
@@ -56,6 +60,31 @@ export default function ServiceOrderDetailPage({ editMode = false }) {
     }
     loadOrder()
   }, [orderId, editMode, loadOrder])
+
+  useEffect(() => {
+    if (!location.state?.createdMessage) return
+    window.history.replaceState({}, document.title)
+  }, [location.state?.createdMessage])
+
+  const onPublicationUpdated = useCallback((payload) => {
+    setOrder((current) => {
+      if (!current || current.id !== payload.orderId) {
+        return current
+      }
+      return {
+        ...current,
+        publicationStatus: payload.publicationStatus,
+        publishedAt: payload.publishedAt,
+        publicationFailures: payload.publicationFailures || [],
+        canRepublish: payload.canRepublish,
+      }
+    })
+    if (payload.publicationStatus === PUBLICATION_STATUS.PUBLISHED) {
+      setBanner(ORDER_PUBLISHED_MESSAGE)
+    }
+  }, [])
+
+  useOrderPublicationSse(orderId, onPublicationUpdated)
 
   const onSave = async (e) => {
     e.preventDefault()

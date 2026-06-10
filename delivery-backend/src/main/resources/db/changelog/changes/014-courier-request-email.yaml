@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-courier-request-email
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: courier_requests
+            columns:
+              - column:
+                  name: email
+                  type: varchar(255)

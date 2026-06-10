@@ -8,6 +8,7 @@ export function mapDeliveryApiError(err, fallback = 'Не удалось вып�
     if (msg && !/^HTTP\s\d+/i.test(msg)) return msg
     return 'Не удалось выполнить действие'
   }
+  if (err?.status === 401) return 'Сессия истекла. Войдите снова.'
   if (err?.status === 403) return 'Недостаточно прав'
   if (err?.status === 502 || err?.status === 503 || err?.status === 504) {
     return 'Не удалось создать пользователя. Попробуйте позже'

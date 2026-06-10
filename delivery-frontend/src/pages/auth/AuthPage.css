@@ -71,13 +71,14 @@
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .auth-label {
   font-size: 0.875rem;
   font-weight: 500;
   color: #374151;
+  margin-bottom: -10px;
 }
 
 .auth-input {
@@ -216,4 +217,24 @@
   background: #fef2f2;
   border-radius: 8px;
   margin-bottom: 16px;
+}
+
+.auth-restaurant-cta {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.auth-restaurant-cta__text {
+  margin-bottom: 12px !important;
+}
+
+.auth-restaurant-cta__btn {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+  box-sizing: border-box;
+  text-align: center;
+  line-height: 1.25;
 }

@@ -31,8 +31,9 @@ export default function AddObjectPage() {
       setError('Укажите название объекта')
       return
     }
-    if (!ownerName || !ownerPhoneVal) {
-      setError('Заполните ФИО и телефон владельца')
+    const ownerEmailVal = ownerEmail.trim()
+    if (!ownerName || !ownerPhoneVal || !ownerEmailVal) {
+      setError('Заполните ФИО, телефон и email владельца')
       return
     }
 
@@ -45,7 +46,7 @@ export default function AddObjectPage() {
         owner: {
           fullName: ownerName,
           phone: ownerPhoneVal,
-          email: ownerEmail.trim() || undefined,
+          email: ownerEmailVal,
         },
       })
       const objectId = created?.object?.id ?? created?.id
@@ -136,13 +137,14 @@ export default function AddObjectPage() {
             <PhoneInput className="input" value={ownerPhone} onChange={setOwnerPhone} />
           </label>
           <label className="objects-form__label">
-            Email владельца (необязательно)
+            Email владельца
             <input
               type="email"
               className="input"
               value={ownerEmail}
               onChange={(e) => setOwnerEmail(e.target.value)}
               placeholder="owner@example.com"
+              required
             />
           </label>
 

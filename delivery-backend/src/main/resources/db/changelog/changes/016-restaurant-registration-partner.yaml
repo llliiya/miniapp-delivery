@@ -1,0 +1,138 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-courier-profile-partner-code
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: courier_profiles
+            columns:
+              - column:
+                  name: partner_code
+                  type: varchar(8)
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: courier_profiles
+            columnNames: partner_code
+            constraintName: uq_courier_profiles_partner_code
+        - createIndex:
+            schemaName: delivery
+            tableName: courier_profiles
+            indexName: idx_courier_profiles_partner_code
+            columns:
+              - column:
+                  name: partner_code
+
+  - changeSet:
+      id: 016-restaurant-registration-requests
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: restaurant_registration_requests
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: restaurant_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: address
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: contact_person
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: phone
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment
+                  type: text
+              - column:
+                  name: source_type
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: partner_code
+                  type: varchar(8)
+              - column:
+                  name: courier_member_id
+                  type: uuid
+              - column:
+                  name: restaurant_id
+                  type: uuid
+              - column:
+                  name: status
+                  type: varchar(16)
+                  defaultValue: NEW
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: timestamptz
+              - column:
+                  name: processed_by
+                  type: bigint
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: restaurant_registration_requests
+            baseColumnNames: courier_member_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organization_members
+            referencedColumnNames: id
+            constraintName: fk_rest_reg_req_courier_member
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: restaurant_registration_requests
+            baseColumnNames: restaurant_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_rest_reg_req_restaurant
+        - createIndex:
+            schemaName: delivery
+            tableName: restaurant_registration_requests
+            indexName: idx_rest_reg_req_status_created
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: created_at
+        - createIndex:
+            schemaName: delivery
+            tableName: restaurant_registration_requests
+            indexName: idx_rest_reg_req_courier_member
+            columns:
+              - column:
+                  name: courier_member_id
+        - createIndex:
+            schemaName: delivery
+            tableName: restaurant_registration_requests
+            indexName: idx_rest_reg_req_partner_code
+            columns:
+              - column:
+                  name: partner_code

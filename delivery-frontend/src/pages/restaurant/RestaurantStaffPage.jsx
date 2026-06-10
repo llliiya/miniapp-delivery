@@ -163,14 +163,18 @@ export default function RestaurantStaffPage() {
     e.preventDefault()
     const trimmedName = fullName.trim()
     const trimmedPhone = phone.trim()
-    if (!trimmedName || !trimmedPhone) return
+    const trimmedEmail = email.trim()
+    if (!trimmedName || !trimmedPhone || !trimmedEmail) {
+      setError('Заполните ФИО, телефон и email')
+      return
+    }
     setSubmitting(true)
     try {
       const result = await addOrganizationMember(restaurantId, {
         role,
         fullName: trimmedName,
         phone: trimmedPhone,
-        email: email.trim() || undefined,
+        email: trimmedEmail,
       })
       setCredentialsTitle('Сотрудник добавлен')
       setCredentialsIntro('Передайте сотруднику данные для входа:')
@@ -329,6 +333,7 @@ export default function RestaurantStaffPage() {
               className="input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </label>
           <label className="restaurant-staff-form__label">

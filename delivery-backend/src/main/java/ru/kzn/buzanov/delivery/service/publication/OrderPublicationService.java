@@ -9,6 +9,7 @@ import ru.kzn.buzanov.delivery.domain.ChannelPostStatus;
 import ru.kzn.buzanov.delivery.domain.DeliveryOrder;
 import ru.kzn.buzanov.delivery.domain.OrderChannelPost;
 import ru.kzn.buzanov.delivery.domain.OrderStatus;
+import ru.kzn.buzanov.delivery.domain.PublicationStatus;
 import ru.kzn.buzanov.delivery.domain.PublicationChannel;
 import ru.kzn.buzanov.delivery.domain.RestaurantChannelBinding;
 import ru.kzn.buzanov.delivery.dto.OrderPublicationFailureDto;
@@ -174,6 +175,10 @@ public class OrderPublicationService {
         if (order.getStatus() != OrderStatus.waiting_for_courier || order.getCourierUserId() != null) {
             return false;
         }
+        PublicationStatus publicationStatus = order.getPublicationStatus();
+        if (publicationStatus == PublicationStatus.pending || publicationStatus == PublicationStatus.processing) {
+            return false;
+        }
         if (order.getPublishedAt() == null) {
             return true;
         }
@@ -186,6 +191,16 @@ public class OrderPublicationService {
             }
         }
         return false;
+    }
+
+    public PublicationStatus resolvePublicationStatusAfterPublish(List<String> warnings, DeliveryOrder order) {
+        if (warnings.contains("no_active_channels") || warnings.contains("publication_failed")) {
+            return PublicationStatus.failed;
+        }
+        if (order.getPublishedAt() != null) {
+            return PublicationStatus.published;
+        }
+        return PublicationStatus.failed;
     }
 
     private List<String> buildPublicationWarnings(int sentCount, int failedCount) {

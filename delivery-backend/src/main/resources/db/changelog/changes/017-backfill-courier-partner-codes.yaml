@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-backfill-courier-partner-codes
+      author: delivery
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              DECLARE
+                rec RECORD;
+                chars TEXT := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                new_code TEXT;
+                i INT;
+                unique_found BOOLEAN;
+              BEGIN
+                FOR rec IN
+                  SELECT id FROM delivery.courier_profiles WHERE partner_code IS NULL
+                LOOP
+                  unique_found := FALSE;
+                  WHILE NOT unique_found LOOP
+                    new_code := '';
+                    FOR i IN 1..6 LOOP
+                      new_code := new_code || substr(chars, 1 + floor(random() * length(chars))::INT, 1);
+                    END LOOP;
+                    IF NOT EXISTS (
+                      SELECT 1 FROM delivery.courier_profiles WHERE partner_code = new_code
+                    ) THEN
+                      UPDATE delivery.courier_profiles
+                      SET partner_code = new_code
+                      WHERE id = rec.id;
+                      unique_found := TRUE;
+                    END IF;
+                  END LOOP;
+                END LOOP;
+              END $$;

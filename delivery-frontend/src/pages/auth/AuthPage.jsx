@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
 import PageContainer from "../../components/PageContainer";
 import {
   loginPhone,
@@ -598,6 +599,12 @@ export default function AuthPage({
               >
                 Нет аккаунта? Оставить заявку
               </button>
+              <div className="auth-restaurant-cta">
+                <p className="auth-hint auth-restaurant-cta__text">Нет вашего объекта в системе?</p>
+                <Link to="/join" className="auth-submit auth-restaurant-cta__btn">
+                  Подать заявку на подключение
+                </Link>
+              </div>
             </form>
           )}
 

@@ -30,6 +30,9 @@ public class CourierProfile {
     @Column(name = "completed_orders_count", nullable = false)
     private int completedOrdersCount;
 
+    @Column(name = "partner_code", length = 8)
+    private String partnerCode;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 }

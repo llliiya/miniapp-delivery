@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import CopySnackbar from './CopySnackbar.jsx'
+import AppModal from './AppModal.jsx'
 import { buildCredentialsCopyText, copyToClipboard } from '../utils/copyToClipboard.js'
 import './ProvisioningCredentialsModal.css'
 
@@ -50,29 +51,11 @@ export default function ProvisioningCredentialsModal({
 
   return (
     <>
-      <div className="prov-creds-overlay" role="dialog" aria-modal="true" aria-labelledby="prov-creds-title">
-        <div className="prov-creds-modal card">
-          <h2 id="prov-creds-title" className="prov-creds-modal__title">
-            {title}
-          </h2>
-          {intro && <p className="prov-creds-modal__intro">{intro}</p>}
-          {personHint && <p className="prov-creds-modal__person muted">{personHint}</p>}
-          {!hideDefaultLabel && <p className="prov-creds-modal__label">Передайте данные для входа:</p>}
-          <dl className="prov-creds-modal__kv">
-            <div>
-              <dt>Логин</dt>
-              <dd>
-                <code>{displayLogin}</code>
-              </dd>
-            </div>
-            <div>
-              <dt>Временный пароль</dt>
-              <dd>
-                <code>{displayPassword}</code>
-              </dd>
-            </div>
-          </dl>
-          <p className="prov-creds-modal__note muted">{firstLoginNote}</p>
+      <AppModal
+        open
+        title={title}
+        onClose={onClose}
+        footer={(
           <div className="prov-creds-modal__actions">
             <button type="button" className="btn" onClick={onCopy}>
               Скопировать логин и пароль
@@ -82,12 +65,28 @@ export default function ProvisioningCredentialsModal({
                 {primaryAction}
               </button>
             )}
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Закрыть
-            </button>
           </div>
-        </div>
-      </div>
+        )}
+      >
+        {intro && <p className="prov-creds-modal__intro">{intro}</p>}
+        {personHint && <p className="prov-creds-modal__person muted">{personHint}</p>}
+        {!hideDefaultLabel && <p className="prov-creds-modal__label">Передайте данные для входа:</p>}
+        <dl className="prov-creds-modal__kv">
+          <div>
+            <dt>Логин</dt>
+            <dd>
+              <code>{displayLogin}</code>
+            </dd>
+          </div>
+          <div>
+            <dt>Временный пароль</dt>
+            <dd>
+              <code>{displayPassword}</code>
+            </dd>
+          </div>
+        </dl>
+        <p className="prov-creds-modal__note muted">{firstLoginNote}</p>
+      </AppModal>
       <CopySnackbar
         message={snackbar?.message ?? null}
         variant={snackbar?.variant ?? 'success'}

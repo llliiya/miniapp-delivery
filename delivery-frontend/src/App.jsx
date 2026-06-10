@@ -11,6 +11,7 @@ import RestaurantRoutes from './routes/RestaurantRoutes.jsx'
 import ServiceRoutes from './routes/ServiceRoutes.jsx'
 import { INTERFACE_MODES } from './utils/deliverySession.js'
 import MessengerLinkPage from './pages/auth/MessengerLinkPage.jsx'
+import JoinRestaurantPage from './pages/auth/JoinRestaurantPage.jsx'
 import {
   capturePendingOrderDeeplink,
   consumePendingOrderDeeplink,
@@ -101,6 +102,7 @@ export default function App() {
       <DeeplinkHandler />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/join" element={<JoinRestaurantPage />} />
         <Route path="/messenger/link" element={<MessengerLinkPage />} />
         <Route path="/register" element={<Navigate to="/login?apply=1" replace />} />
         <Route

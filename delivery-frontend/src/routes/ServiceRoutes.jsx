@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import RoleShell from '../layouts/RoleShell.jsx'
 import ServiceOrdersPage from '../pages/service/ServiceOrdersPage.jsx'
-import ServiceNewOrderPage from '../pages/service/ServiceNewOrderPage.jsx'
+import NewOrderPage from '../pages/shared/NewOrderPage.jsx'
 import ServiceOrderDetailPage from '../pages/service/ServiceOrderDetailPage.jsx'
 import ServiceProfilePage from '../pages/service/ServiceProfilePage.jsx'
 import ServiceAdminPage from '../pages/service/ServiceAdminPage.jsx'
@@ -29,7 +29,7 @@ export default function ServiceRoutes() {
       <Route element={<RoleShell navItems={NAV} title="Курьерская служба" />}>
         <Route index element={<Navigate to="orders" replace />} />
         <Route path="orders" element={<ServiceOrdersPage />} />
-        <Route path="orders/new" element={<ServiceNewOrderPage />} />
+        <Route path="orders/new" element={<NewOrderPage />} />
         <Route path="orders/:orderId" element={<ServiceOrderDetailPage />} />
         <Route path="orders/:orderId/edit" element={<ServiceOrderDetailPage editMode />} />
         <Route path="restaurants" element={<ObjectsPage />} />
@@ -39,6 +39,7 @@ export default function ServiceRoutes() {
         <Route path="restaurants/:restaurantId/channels" element={<ObjectChannelsPage />} />
         <Route path="restaurants/:restaurantId/pickup" element={<PickupPointsPage />} />
         <Route path="couriers" element={<ServiceCouriersPage />} />
+        <Route path="registration-requests" element={<Navigate to="/service/restaurants" replace />} />
         <Route path="channels" element={<ChannelsPage />} />
         <Route path="profile" element={<ServiceProfilePage />} />
         {DEV_AUTH_ENABLED && <Route path="admin" element={<ServiceAdminPage />} />}

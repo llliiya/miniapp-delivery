@@ -488,9 +488,17 @@ a {
 
 .courier-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.courier-tabs .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .pending-activation {
@@ -724,6 +732,50 @@ a {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.objects-page__requests {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.objects-page__section-title {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.objects-page__section-lead {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.objects-page__requests-table-wrap {
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.objects-page__requests-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.objects-page__requests-table th,
+.objects-page__requests-table td {
+  padding: 8px 6px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.objects-page__requests-table tbody tr {
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-sm {
+  font-size: 13px;
+  padding: 8px 10px;
 }
 
 .objects-list-card__name {
@@ -1467,6 +1519,14 @@ a {
 
 .order-card__value--strong {
   font-weight: 700;
+}
+
+.order-card__value--pending {
+  color: #b45309;
+}
+
+.order-card__value--warn {
+  color: #b91c1c;
 }
 
 .order-card__line {

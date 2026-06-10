@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listRestaurants } from '../../api/deliveryService.js'
 import ObjectEmptyState from '../../components/objects/ObjectEmptyState.jsx'
 import ObjectListCard from '../../components/objects/ObjectListCard.jsx'
+import ObjectRegistrationRequestsSection from '../../components/objects/ObjectRegistrationRequestsSection.jsx'
 import { useCourierServiceId } from '../../hooks/useActiveOrg.js'
 import { loadObjectStats } from '../../utils/loadObjectStats.js'
 
@@ -12,6 +13,11 @@ export default function ObjectsPage() {
   const [statsById, setStatsById] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
+
+  const reloadObjects = useCallback(() => {
+    setReloadKey((k) => k + 1)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -48,7 +54,7 @@ export default function ObjectsPage() {
     return () => {
       cancelled = true
     }
-  }, [courierServiceId])
+  }, [courierServiceId, reloadKey])
 
   return (
     <div className="objects-page">
@@ -61,6 +67,8 @@ export default function ObjectsPage() {
           + Добавить объект
         </Link>
       </header>
+
+      <ObjectRegistrationRequestsSection onChanged={reloadObjects} />
 
       {loading && (
         <section className="card objects-page__loading">
