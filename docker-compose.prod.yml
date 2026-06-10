@@ -47,12 +47,12 @@ services:
       PLUSOFON_CLIENT_ID: ""
       PLUSOFON_DEV: "false"
       BYPASS_VERIFICATION_CODES: "false"
-      SMTP_HOST: ""
-      SMTP_PORT: "587"
-      SMTP_USERNAME: ""
-      SMTP_PASSWORD: ""
-      SMTP_SSL_ENABLE: "false"
-      SMTP_STARTTLS_ENABLE: "true"
+      SMTP_HOST: smtp.mail.ru
+      SMTP_PORT: "465"
+      SMTP_USERNAME: dobrovoz_rabota@mail.ru
+      SMTP_PASSWORD: B9ugJXTePoGetV9eESFS
+      SMTP_SSL_ENABLE: "true"
+      SMTP_STARTTLS_ENABLE: "false"
 
   notification:
     build:
