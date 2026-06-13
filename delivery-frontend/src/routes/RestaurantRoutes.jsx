@@ -29,6 +29,7 @@ export default function RestaurantRoutes() {
         <Route path="pickup" element={<PickupPointsPage />} />
         <Route path="channels" element={<RestaurantChannelsPage />} />
         <Route path="staff" element={<RestaurantStaffPage />} />
+        <Route path="partner" element={<Navigate to="/restaurant/profile#partner-program" replace />} />
         <Route path="profile" element={<RestaurantProfilePage />} />
       </Route>
     </Routes>

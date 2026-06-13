@@ -18,6 +18,8 @@ public interface RestaurantRegistrationRequestRepository extends JpaRepository<R
 
     List<RestaurantRegistrationRequest> findByCourierMemberIdOrderByCreatedAtDesc(UUID courierMemberId);
 
+    List<RestaurantRegistrationRequest> findByReferrerOrganizationIdOrderByCreatedAtDesc(UUID referrerOrganizationId);
+
     long countByCourierMemberId(UUID courierMemberId);
 
     long countByCourierMemberIdAndStatusIn(UUID courierMemberId, List<RestaurantRegistrationRequestStatus> statuses);
@@ -25,10 +27,12 @@ public interface RestaurantRegistrationRequestRepository extends JpaRepository<R
     @Query("""
             SELECT r FROM RestaurantRegistrationRequest r
             LEFT JOIN Organization o ON o.id = r.restaurantId
+            LEFT JOIN Organization refOrg ON refOrg.id = r.referrerOrganizationId
             WHERE r.sourceType = :selfType
                OR (r.courierMemberId IN (
                     SELECT m.id FROM OrganizationMember m WHERE m.organizationId = :courierServiceId
                ))
+               OR (refOrg.courierServiceId = :courierServiceId)
                OR (r.sourceType = :adminType AND o.courierServiceId = :courierServiceId)
             ORDER BY r.createdAt DESC
             """)

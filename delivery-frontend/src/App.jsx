@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { useSwipeBackDisabledOnRoots } from './hooks/useSwipeBack.js'
+import { useTelegramBackButton } from './hooks/useTelegramBackButton.js'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import HomeRedirect from './pages/HomeRedirect.jsx'
@@ -12,6 +14,7 @@ import ServiceRoutes from './routes/ServiceRoutes.jsx'
 import { INTERFACE_MODES } from './utils/deliverySession.js'
 import MessengerLinkPage from './pages/auth/MessengerLinkPage.jsx'
 import JoinRestaurantPage from './pages/auth/JoinRestaurantPage.jsx'
+import JoinCourierPage from './pages/auth/JoinCourierPage.jsx'
 import {
   capturePendingOrderDeeplink,
   consumePendingOrderDeeplink,
@@ -96,13 +99,21 @@ function DeeplinkHandler() {
   return null
 }
 
+function MobileNavigationHandlers() {
+  useSwipeBackDisabledOnRoots()
+  useTelegramBackButton()
+  return null
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <DeeplinkHandler />
+      <MobileNavigationHandlers />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/join" element={<JoinRestaurantPage />} />
+        <Route path="/join-courier" element={<JoinCourierPage />} />
         <Route path="/messenger/link" element={<MessengerLinkPage />} />
         <Route path="/register" element={<Navigate to="/login?apply=1" replace />} />
         <Route

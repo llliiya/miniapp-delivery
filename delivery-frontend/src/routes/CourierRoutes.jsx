@@ -7,12 +7,10 @@ import CourierOrderDetailPage from '../pages/courier/CourierOrderDetailPage.jsx'
 import CourierMyOrdersPage from '../pages/courier/CourierMyOrdersPage.jsx'
 import CourierMyOrderDetailPage from '../pages/courier/CourierMyOrderDetailPage.jsx'
 import CourierProfilePage from '../pages/courier/CourierProfilePage.jsx'
-import CourierPartnerProgramPage from '../pages/courier/CourierPartnerProgramPage.jsx'
 
 const NAV = [
   { to: '/courier/orders', label: 'Заказы', icon: 'orders', end: false },
   { to: '/courier/my-orders', label: 'Мои', icon: 'my', end: false },
-  { to: '/courier/partner', label: 'Партнёры', icon: 'profile', end: false },
   { to: '/courier/profile', label: 'Профиль', icon: 'profile', end: false },
 ]
 
@@ -47,7 +45,7 @@ export default function CourierRoutes() {
         <Route path="my-orders/:orderId" element={<CourierMyOrderDetailPage />} />
         <Route path="my" element={<Navigate to="/courier/my-orders" replace />} />
         <Route path="map" element={<CourierMapPage />} />
-        <Route path="partner" element={<CourierPartnerProgramPage />} />
+        <Route path="partner" element={<Navigate to="/courier/profile#partner-program" replace />} />
         <Route path="profile" element={<CourierProfilePage />} />
       </Route>
     </Routes>

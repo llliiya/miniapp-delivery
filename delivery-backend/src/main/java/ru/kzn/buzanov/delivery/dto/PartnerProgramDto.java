@@ -4,7 +4,8 @@ import java.util.List;
 
 public record PartnerProgramDto(
         String partnerCode,
-        String inviteUrl,
+        String restaurantInviteUrl,
+        String courierInviteUrl,
         long totalInvitations,
         long pendingCount,
         long connectedCount,

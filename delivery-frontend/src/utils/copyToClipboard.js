@@ -39,6 +39,19 @@ export function buildCredentialsCopyText(login, temporaryPassword) {
 }
 
 /**
+ * Текст для отправки логина и пароля в мессенджер.
+ * @param {string} login
+ * @param {string} temporaryPassword
+ * @param {{ personHint?: string }} [options]
+ */
+export function buildCredentialsShareText(login, temporaryPassword, options = {}) {
+  const body = buildCredentialsCopyText(login, temporaryPassword)
+  const hint = (options.personHint ?? '').trim()
+  const header = hint ? `${hint}:\n` : 'Данные для входа в Добровоз:\n'
+  return `${header}${body}\n\nПри первом входе нужно сменить пароль.`
+}
+
+/**
  * Разбирает текст из буфера после «Скопировать логин и пароль».
  * @param {string} text
  * @returns {{ login: string, password: string }}

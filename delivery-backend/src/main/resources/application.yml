@@ -41,11 +41,13 @@ notification:
 
 delivery:
   frontend-url: ${FRONTEND_DELIVERY_URL:http://localhost:5174}
+  public-api-url: ${DELIVERY_PUBLIC_API_URL:}
   telegram:
     bot-token: ${TG_TOKEN:}
     bot-username: ${TG_BOT_USERNAME:}
     mini-app-short-name: ${TG_BOT_MINI_APP_SHORT_NAME:}
     admin-chat-id: ${TG_ADMIN_CHAT_ID:}
+    polling-enabled: ${DELIVERY_TELEGRAM_POLLING:false}
   max:
     bot-token: ${MAX_BOT_TOKEN:}
     bot-username: ${MAX_BOT_USERNAME:}

@@ -18,4 +18,8 @@ public interface CourierRequestRepository extends JpaRepository<CourierRequest, 
             CourierRequestStatus status);
 
     List<CourierRequest> findByStatusOrderByCreatedAtDesc(CourierRequestStatus status);
+
+    List<CourierRequest> findByReferrerMemberIdOrderByCreatedAtDesc(UUID referrerMemberId);
+
+    List<CourierRequest> findByReferrerOrganizationIdOrderByCreatedAtDesc(UUID referrerOrganizationId);
 }

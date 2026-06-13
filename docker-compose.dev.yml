@@ -55,6 +55,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      account:
+        condition: service_started
     environment:
       NOTIFICATION_DB_URL: jdbc:postgresql://db:5432/${DELIVERY_POSTGRES_DB:-delivery}
       NOTIFICATION_DB_USERNAME: postgres

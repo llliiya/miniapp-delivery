@@ -1,3 +1,7 @@
 spring:
   jpa:
     show-sql: false
+
+delivery:
+  telegram:
+    polling-enabled: ${DELIVERY_TELEGRAM_POLLING:true}

@@ -255,6 +255,10 @@ export function rejectRestaurantRegistrationRequest(requestId, courierServiceId)
   )
 }
 
-export function fetchPartnerProgram(memberId) {
+export function fetchCourierPartnerProgram(memberId) {
   return deliveryApi(`/couriers/${memberId}/partner-program`)
+}
+
+export function fetchRestaurantPartnerProgram(restaurantId) {
+  return deliveryApi(`/restaurants/${restaurantId}/partner-program`)
 }

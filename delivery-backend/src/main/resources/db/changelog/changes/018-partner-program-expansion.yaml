@@ -1,0 +1,140 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-organization-partner-code
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: organizations
+            columns:
+              - column:
+                  name: partner_code
+                  type: varchar(8)
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: organizations
+            columnNames: partner_code
+            constraintName: uq_organizations_partner_code
+        - createIndex:
+            schemaName: delivery
+            tableName: organizations
+            indexName: idx_organizations_partner_code
+            columns:
+              - column:
+                  name: partner_code
+
+  - changeSet:
+      id: 018-restaurant-registration-referrer-org
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: restaurant_registration_requests
+            columns:
+              - column:
+                  name: referrer_organization_id
+                  type: uuid
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: restaurant_registration_requests
+            baseColumnNames: referrer_organization_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_rest_reg_req_referrer_org
+        - createIndex:
+            schemaName: delivery
+            tableName: restaurant_registration_requests
+            indexName: idx_rest_reg_req_referrer_org
+            columns:
+              - column:
+                  name: referrer_organization_id
+
+  - changeSet:
+      id: 018-courier-request-partner-referrer
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: courier_requests
+            columns:
+              - column:
+                  name: partner_code
+                  type: varchar(8)
+              - column:
+                  name: referrer_member_id
+                  type: uuid
+              - column:
+                  name: referrer_organization_id
+                  type: uuid
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: courier_requests
+            baseColumnNames: referrer_member_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organization_members
+            referencedColumnNames: id
+            constraintName: fk_courier_req_referrer_member
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: courier_requests
+            baseColumnNames: referrer_organization_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_courier_req_referrer_org
+        - createIndex:
+            schemaName: delivery
+            tableName: courier_requests
+            indexName: idx_courier_req_referrer_member
+            columns:
+              - column:
+                  name: referrer_member_id
+        - createIndex:
+            schemaName: delivery
+            tableName: courier_requests
+            indexName: idx_courier_req_referrer_org
+            columns:
+              - column:
+                  name: referrer_organization_id
+
+  - changeSet:
+      id: 018-backfill-restaurant-partner-codes
+      author: delivery
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $$
+              DECLARE
+                org_id uuid;
+                new_code varchar(8);
+                chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                attempt int;
+                i int;
+                code_taken boolean;
+              BEGIN
+                FOR org_id IN
+                  SELECT id FROM delivery.organizations
+                  WHERE type = 'client_restaurant' AND partner_code IS NULL
+                LOOP
+                  attempt := 0;
+                  LOOP
+                    attempt := attempt + 1;
+                    IF attempt > 30 THEN
+                      RAISE EXCEPTION 'Failed to generate partner code for organization %', org_id;
+                    END IF;
+                    new_code := '';
+                    FOR i IN 1..6 LOOP
+                      new_code := new_code || substr(chars, floor(random() * length(chars) + 1)::int, 1);
+                    END LOOP;
+                    SELECT EXISTS (
+                      SELECT 1 FROM delivery.organizations WHERE partner_code = new_code
+                      UNION ALL
+                      SELECT 1 FROM delivery.courier_profiles WHERE partner_code = new_code
+                    ) INTO code_taken;
+                    EXIT WHEN NOT code_taken;
+                  END LOOP;
+                  UPDATE delivery.organizations SET partner_code = new_code WHERE id = org_id;
+                END LOOP;
+              END $$;

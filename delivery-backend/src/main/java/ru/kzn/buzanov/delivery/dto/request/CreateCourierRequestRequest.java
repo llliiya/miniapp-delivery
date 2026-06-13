@@ -13,6 +13,7 @@ public record CreateCourierRequestRequest(
         @Size(max = 2000) String comment,
         @Size(max = 16) String messengerProvider,
         @Size(max = 64) String messengerExternalId,
-        @Size(max = 128) String messengerUsername
+        @Size(max = 128) String messengerUsername,
+        @Size(max = 8) String partnerCode
 ) {
 }

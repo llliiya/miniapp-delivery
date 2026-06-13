@@ -8,7 +8,11 @@ import {
 import ChannelCard from '../../components/channels/ChannelCard.jsx'
 import EmptyState, { EmptyStateIcon } from '../../components/EmptyState.jsx'
 import { useCourierServiceId } from '../../hooks/useActiveOrg.js'
-import { CHANNEL_EXTERNAL_ID_HINT, channelExternalIdLabel } from '../../utils/channelFormLabels.js'
+import {
+  CHANNEL_EXTERNAL_ID_HINT,
+  CHANNEL_TELEGRAM_ID_STEPS,
+  channelExternalIdLabel,
+} from '../../utils/channelFormLabels.js'
 
 const emptyForm = {
   type: 'telegram',
@@ -194,6 +198,11 @@ export default function ChannelsPage() {
           <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
             {CHANNEL_EXTERNAL_ID_HINT}
           </p>
+          {form.type === 'telegram' && (
+            <p className="muted" style={{ margin: '0 0 12px', fontSize: 13, whiteSpace: 'pre-line' }}>
+              {CHANNEL_TELEGRAM_ID_STEPS}
+            </p>
+          )}
           <label>
             Город
             <input

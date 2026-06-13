@@ -20,4 +20,10 @@ class AccountProvisioningClientTest {
         var ex = new ResponseStatusException(HttpStatus.CONFLICT, "Пользователь с таким телефоном уже существует");
         assertFalse(AccountProvisioningClient.isLoginConflict(ex));
     }
+
+    @Test
+    void detectsEmailConflictAsNotLoginConflict() {
+        var ex = new ResponseStatusException(HttpStatus.CONFLICT, "Этот email уже используется");
+        assertFalse(AccountProvisioningClient.isLoginConflict(ex));
+    }
 }

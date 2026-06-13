@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DEV_AUTH_ENABLED } from '../../config.js'
-import { getCourier } from '../../api/deliveryService.js'
+import { fetchCourierPartnerProgram, getCourier } from '../../api/deliveryService.js'
+import PartnerProgramSection from '../../components/partner/PartnerProgramSection.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { labelForStatus } from '../../utils/displayLabels.js'
 import { routeForInterfaceMode } from '../../utils/deliverySession.js'
@@ -100,6 +101,12 @@ export default function CourierProfilePage() {
     }
   }
 
+  const memberId = courierMembership?.memberId
+  const loadPartnerProgram = useCallback(
+    () => fetchCourierPartnerProgram(memberId),
+    [memberId],
+  )
+
   return (
     <div className="role-profile-page">
       <header className="role-profile-page__header">
@@ -196,6 +203,12 @@ export default function CourierProfilePage() {
               <p className="role-profile-stat__value">{courierStats.completedOrdersCount ?? 0}</p>
             </article>
           </section>
+
+          <PartnerProgramSection
+            loadProgram={loadPartnerProgram}
+            disabled={!memberId}
+            disabledMessage="Раздел доступен активным курьерам службы доставки."
+          />
         </>
       )}
 

@@ -46,4 +46,7 @@ public class Organization {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Column(name = "partner_code", length = 8)
+    private String partnerCode;
 }

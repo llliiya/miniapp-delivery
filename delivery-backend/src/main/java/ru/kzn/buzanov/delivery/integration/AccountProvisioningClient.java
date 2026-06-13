@@ -100,7 +100,7 @@ public class AccountProvisioningClient {
         int status = ex.getStatusCode().value();
         if (status == HttpStatus.CONFLICT.value()) {
             String message = extractErrorMessage(ex);
-            if (isLoginConflictMessage(message)) {
+            if (message != null && !message.isBlank()) {
                 return new ResponseStatusException(HttpStatus.CONFLICT, message);
             }
             return new ResponseStatusException(

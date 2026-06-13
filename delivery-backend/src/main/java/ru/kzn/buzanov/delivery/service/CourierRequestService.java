@@ -11,9 +11,11 @@ import ru.kzn.buzanov.delivery.domain.MemberRole;
 import ru.kzn.buzanov.delivery.domain.MemberStatus;
 import ru.kzn.buzanov.delivery.domain.OrganizationMember;
 import ru.kzn.buzanov.delivery.domain.OrganizationType;
+import ru.kzn.buzanov.delivery.domain.PartnerReferrerType;
 import ru.kzn.buzanov.delivery.dto.ApproveCourierRequestResponse;
 import ru.kzn.buzanov.delivery.dto.CourierRequestDto;
 import ru.kzn.buzanov.delivery.dto.MessengerRegistrationStatusDto;
+import ru.kzn.buzanov.delivery.dto.PartnerReferrer;
 import ru.kzn.buzanov.delivery.dto.request.CreateCourierRequestRequest;
 import ru.kzn.buzanov.delivery.integration.AccountProvisioningClient;
 import ru.kzn.buzanov.delivery.integration.AccountUserClient;
@@ -41,6 +43,7 @@ public class CourierRequestService {
     private final DeliveryUserProfileService profileService;
     private final AccessControlService accessControl;
     private final CourierRequestNotificationService notificationService;
+    private final PartnerCodeService partnerCodeService;
 
     @Transactional(readOnly = true)
     public MessengerRegistrationStatusDto messengerStatus(String provider, String externalId) {
@@ -96,6 +99,20 @@ public class CourierRequestService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Заявка с этим телефоном уже на рассмотрении");
         }
 
+        String partnerCodeRaw = trimToNull(request.partnerCode());
+        UUID referrerMemberId = null;
+        UUID referrerOrganizationId = null;
+        String partnerCode = null;
+        if (partnerCodeRaw != null) {
+            PartnerReferrer referrer = partnerCodeService.resolvePartnerCode(partnerCodeRaw);
+            partnerCode = referrer.partnerCode();
+            if (referrer.type() == PartnerReferrerType.COURIER) {
+                referrerMemberId = referrer.memberId();
+            } else {
+                referrerOrganizationId = referrer.organizationId();
+            }
+        }
+
         Instant now = Instant.now();
         CourierRequest entity = new CourierRequest();
         entity.setId(UUID.randomUUID());
@@ -110,7 +127,10 @@ public class CourierRequestService {
         entity.setMessengerProvider(hasMessenger ? provider : null);
         entity.setMessengerExternalId(hasMessenger ? externalId : null);
         entity.setMessengerUsername(trimToNull(request.messengerUsername()));
-        entity.setSource(hasMessenger ? "messenger" : "web");
+        entity.setSource(hasMessenger ? "messenger" : partnerCode != null ? "partner" : "web");
+        entity.setPartnerCode(partnerCode);
+        entity.setReferrerMemberId(referrerMemberId);
+        entity.setReferrerOrganizationId(referrerOrganizationId);
         entity.setStatus(CourierRequestStatus.NEW);
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);

@@ -49,6 +49,9 @@ public class RestaurantRegistrationRequest {
     @Column(name = "courier_member_id")
     private UUID courierMemberId;
 
+    @Column(name = "referrer_organization_id")
+    private UUID referrerOrganizationId;
+
     @Column(name = "restaurant_id")
     private UUID restaurantId;
 

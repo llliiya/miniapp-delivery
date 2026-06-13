@@ -4,7 +4,8 @@
 export function mapDeliveryApiError(err, fallback = 'Не удалось выполнить операцию') {
   const msg = (err?.message || err?.error || '').trim()
   if (err?.status === 409) {
-    if (/телефон/i.test(msg)) return 'Пользователь с таким телефоном уже существует'
+    if (/телефон|номером телефона/i.test(msg)) return 'Пользователь с таким телефоном уже существует'
+    if (/email/i.test(msg)) return msg
     if (msg && !/^HTTP\s\d+/i.test(msg)) return msg
     return 'Не удалось выполнить действие'
   }

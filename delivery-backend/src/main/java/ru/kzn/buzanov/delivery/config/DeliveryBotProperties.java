@@ -10,6 +10,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class DeliveryBotProperties {
 
     private String frontendUrl = "http://localhost:5174";
+    /** Публичный URL фронта/API для webhook Telegram. По умолчанию — frontend-url. */
+    private String publicApiUrl = "";
 
     private Telegram telegram = new Telegram();
     private Max max = new Max();
@@ -23,6 +25,10 @@ public class DeliveryBotProperties {
         private String miniAppShortName = "";
         /** Chat ID администратора для уведомлений о заявках курьеров. */
         private String adminChatId = "";
+        /**
+         * Long polling вместо webhook (удобно для локальной разработки без публичного HTTPS).
+         */
+        private boolean pollingEnabled = false;
     }
 
     @Getter

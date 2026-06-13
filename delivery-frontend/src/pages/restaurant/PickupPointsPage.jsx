@@ -11,6 +11,7 @@ import ShortAddressText from '../../components/ShortAddressText.jsx'
 import PhoneInput from '../../components/PhoneInput.jsx'
 import PickupPointMap from '../../components/PickupPointMap.jsx'
 import { getGeocoderProviderLabel } from '../../services/geocoding.js'
+import { formatShortAddress } from '../../utils/formatShortAddress.js'
 import EmptyState, { EmptyStateIcon } from '../../components/EmptyState.jsx'
 import { useRestaurantId } from '../../hooks/useActiveOrg.js'
 import './PickupPointsPage.css'
@@ -34,7 +35,7 @@ function formFromPoint(p) {
   const hasCoords = p.lat != null && p.lon != null && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lon))
   return {
     name: p.name || '',
-    address: p.address || '',
+    address: formatShortAddress(p.address || '') || p.address || '',
     addressSelected: hasCoords,
     lat: hasCoords ? Number(p.lat) : null,
     lon: hasCoords ? Number(p.lon) : null,
@@ -96,10 +97,10 @@ export default function PickupPointsPage() {
     setMessage('')
   }
 
-  const handleAddressResolved = ({ address, lat, lon }) => {
+  const handleAddressResolved = ({ address, shortAddress, lat, lon }) => {
     setForm((f) => ({
       ...f,
-      address,
+      address: shortAddress || formatShortAddress(address),
       addressSelected: true,
       lat,
       lon,
@@ -151,15 +152,6 @@ export default function PickupPointsPage() {
       await reload()
     } catch (err) {
       setMessage(err?.message || 'Ошибка удаления')
-    }
-  }
-
-  const onSetDefault = async (p) => {
-    try {
-      await patchPickupPoint(p.id, { isDefault: true })
-      await reload()
-    } catch (err) {
-      setMessage(err?.message || 'Ошибка')
     }
   }
 
@@ -303,11 +295,6 @@ export default function PickupPointsPage() {
               <button type="button" className="btn btn-secondary" onClick={() => openEdit(p)}>
                 Редактировать
               </button>
-              {!p.isDefault && (
-                <button type="button" className="btn btn-secondary" onClick={() => onSetDefault(p)}>
-                  Сделать основной
-                </button>
-              )}
               <button type="button" className="btn btn-secondary" onClick={() => onDelete(p.id)}>
                 Удалить
               </button>

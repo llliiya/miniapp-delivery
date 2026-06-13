@@ -13,7 +13,7 @@ function prefillNameFromMessenger(identity) {
   return ''
 }
 
-export default function RegistrationRequestScreen({ onBack, onSuccess, messengerIdentity }) {
+export default function RegistrationRequestScreen({ onBack, onSuccess, messengerIdentity, partnerCode }) {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -55,6 +55,9 @@ export default function RegistrationRequestScreen({ onBack, onSuccess, messenger
         body.messengerProvider = messengerIdentity.provider
         body.messengerExternalId = messengerIdentity.externalId
         body.messengerUsername = messengerIdentity.username || null
+      }
+      if (partnerCode) {
+        body.partnerCode = partnerCode
       }
       await submitCourierRequest(body)
       onSuccess()

@@ -118,8 +118,8 @@ services:
       args:
         VITE_ENV: production
         VITE_API_BASE_URL: https://85.239.58.129.sslip.io
-        VITE_YANDEX_MAPS_API_KEY: ""
-        VITE_DGIS_API_KEY: ""
+        VITE_YANDEX_MAPS_API_KEY: ${VITE_YANDEX_MAPS_API_KEY:-}
+        VITE_DGIS_API_KEY: ${VITE_DGIS_API_KEY:-}
     restart: unless-stopped
     environment:
       DOMAIN: 85.239.58.129.sslip.io

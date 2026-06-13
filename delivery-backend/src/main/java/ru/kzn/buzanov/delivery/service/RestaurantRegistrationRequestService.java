@@ -5,23 +5,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import ru.kzn.buzanov.delivery.domain.CourierProfile;
 import ru.kzn.buzanov.delivery.domain.MemberRole;
 import ru.kzn.buzanov.delivery.domain.Organization;
 import ru.kzn.buzanov.delivery.domain.OrganizationMember;
-import ru.kzn.buzanov.delivery.domain.OrganizationType;
+import ru.kzn.buzanov.delivery.domain.PartnerReferrerType;
 import ru.kzn.buzanov.delivery.domain.RestaurantRegistrationRequest;
 import ru.kzn.buzanov.delivery.domain.RestaurantRegistrationRequestStatus;
 import ru.kzn.buzanov.delivery.domain.RestaurantRegistrationSourceType;
 import ru.kzn.buzanov.delivery.dto.ApproveRestaurantRegistrationResponse;
 import ru.kzn.buzanov.delivery.dto.CreateRestaurantResponse;
+import ru.kzn.buzanov.delivery.dto.PartnerReferrer;
 import ru.kzn.buzanov.delivery.dto.ProvisioningCredentialsDto;
 import ru.kzn.buzanov.delivery.dto.RestaurantRegistrationRequestDto;
 import ru.kzn.buzanov.delivery.dto.request.CreateRestaurantRegistrationRequest;
 import ru.kzn.buzanov.delivery.dto.request.CreateRestaurantRequest;
 import ru.kzn.buzanov.delivery.dto.request.RestaurantOwnerRequest;
-import ru.kzn.buzanov.delivery.repository.CourierProfileRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
+import ru.kzn.buzanov.delivery.repository.OrganizationRepository;
 import ru.kzn.buzanov.delivery.repository.RestaurantRegistrationRequestRepository;
 import ru.kzn.buzanov.delivery.util.EmailRequirements;
 
@@ -38,8 +38,9 @@ public class RestaurantRegistrationRequestService {
             RestaurantRegistrationRequestStatus.IN_PROGRESS);
 
     private final RestaurantRegistrationRequestRepository requestRepository;
-    private final CourierProfileRepository courierProfileRepository;
     private final OrganizationMemberRepository memberRepository;
+    private final OrganizationRepository organizationRepository;
+    private final PartnerCodeService partnerCodeService;
     private final AccessControlService accessControl;
     private final RestaurantService restaurantService;
 
@@ -63,25 +64,19 @@ public class RestaurantRegistrationRequestService {
 
         String partnerCodeRaw = trimToNull(request.partnerCode());
         UUID courierMemberId = null;
+        UUID referrerOrganizationId = null;
         String partnerCode = null;
         RestaurantRegistrationSourceType sourceType = RestaurantRegistrationSourceType.SELF;
 
         if (partnerCodeRaw != null) {
-            String normalizedCode = partnerCodeRaw.trim().toUpperCase();
-            CourierProfile profile = courierProfileRepository.findByPartnerCode(normalizedCode)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Недействительная партнёрская ссылка"));
-            OrganizationMember courierMember = memberRepository.findById(profile.getMemberId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Недействительная партнёрская ссылка"));
-            if (courierMember.getRole() != MemberRole.courier) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Недействительная партнёрская ссылка");
-            }
-            Organization courierService = accessControl.requireOrganization(courierMember.getOrganizationId());
-            if (courierService.getType() != OrganizationType.courier_service) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Недействительная партнёрская ссылка");
-            }
-            courierMemberId = courierMember.getId();
-            partnerCode = normalizedCode;
+            PartnerReferrer referrer = partnerCodeService.resolvePartnerCode(partnerCodeRaw);
+            partnerCode = referrer.partnerCode();
             sourceType = RestaurantRegistrationSourceType.PARTNER;
+            if (referrer.type() == PartnerReferrerType.COURIER) {
+                courierMemberId = referrer.memberId();
+            } else {
+                referrerOrganizationId = referrer.organizationId();
+            }
         }
 
         Instant now = Instant.now();
@@ -96,6 +91,7 @@ public class RestaurantRegistrationRequestService {
         entity.setSourceType(sourceType);
         entity.setPartnerCode(partnerCode);
         entity.setCourierMemberId(courierMemberId);
+        entity.setReferrerOrganizationId(referrerOrganizationId);
         entity.setStatus(RestaurantRegistrationRequestStatus.NEW);
         entity.setCreatedAt(now);
         requestRepository.save(entity);
@@ -196,6 +192,14 @@ public class RestaurantRegistrationRequestService {
             }
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Заявка не найдена");
         }
+        if (entity.getReferrerOrganizationId() != null) {
+            Organization restaurant = organizationRepository.findById(entity.getReferrerOrganizationId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Заявка не найдена"));
+            if (courierServiceId.equals(restaurant.getCourierServiceId())) {
+                return entity;
+            }
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Заявка не найдена");
+        }
         if (entity.getCourierMemberId() == null) {
             return entity;
         }
@@ -209,6 +213,13 @@ public class RestaurantRegistrationRequestService {
 
     private void assertPartnerBelongsToService(RestaurantRegistrationRequest entity, UUID courierServiceId) {
         if (entity.getSourceType() != RestaurantRegistrationSourceType.PARTNER) {
+            return;
+        }
+        if (entity.getReferrerOrganizationId() != null) {
+            Organization restaurant = accessControl.requireRestaurant(entity.getReferrerOrganizationId());
+            if (!courierServiceId.equals(restaurant.getCourierServiceId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Заявка относится к другой службе");
+            }
             return;
         }
         if (entity.getCourierMemberId() == null) {
@@ -228,6 +239,12 @@ public class RestaurantRegistrationRequestService {
                     .map(m -> m.getDisplayName() != null ? m.getDisplayName() : "Курьер")
                     .orElse(null);
         }
+        String restaurantName = null;
+        if (entity.getReferrerOrganizationId() != null) {
+            restaurantName = organizationRepository.findById(entity.getReferrerOrganizationId())
+                    .map(Organization::getName)
+                    .orElse(null);
+        }
         return new RestaurantRegistrationRequestDto(
                 entity.getId(),
                 entity.getRestaurantName(),
@@ -237,7 +254,7 @@ public class RestaurantRegistrationRequestService {
                 entity.getEmail(),
                 entity.getComment(),
                 entity.getSourceType(),
-                formatSourceLabel(entity.getSourceType(), courierName),
+                formatSourceLabel(entity.getSourceType(), courierName, restaurantName),
                 entity.getPartnerCode(),
                 entity.getCourierMemberId(),
                 courierName,
@@ -248,12 +265,21 @@ public class RestaurantRegistrationRequestService {
                 entity.getProcessedBy());
     }
 
-    static String formatSourceLabel(RestaurantRegistrationSourceType sourceType, String courierName) {
+    static String formatSourceLabel(
+            RestaurantRegistrationSourceType sourceType,
+            String courierName,
+            String restaurantName) {
         return switch (sourceType) {
             case SELF -> "Самостоятельная регистрация";
-            case PARTNER -> courierName != null && !courierName.isBlank()
-                    ? "Приглашен курьером " + courierName
-                    : "Приглашен курьером";
+            case PARTNER -> {
+                if (restaurantName != null && !restaurantName.isBlank()) {
+                    yield "Приглашен объектом " + restaurantName;
+                }
+                if (courierName != null && !courierName.isBlank()) {
+                    yield "Приглашен курьером " + courierName;
+                }
+                yield "Партнёрское приглашение";
+            }
             case ADMIN -> "Добавлен администратором";
         };
     }

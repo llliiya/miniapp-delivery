@@ -58,6 +58,15 @@ public class CourierRequest {
     @Column(name = "linked_user_id")
     private Long linkedUserId;
 
+    @Column(name = "partner_code", length = 8)
+    private String partnerCode;
+
+    @Column(name = "referrer_member_id")
+    private UUID referrerMemberId;
+
+    @Column(name = "referrer_organization_id")
+    private UUID referrerOrganizationId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

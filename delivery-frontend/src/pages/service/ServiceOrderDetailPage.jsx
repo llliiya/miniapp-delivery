@@ -151,7 +151,7 @@ export default function ServiceOrderDetailPage({ editMode = false }) {
 
   return (
     <div style={{ padding: 16 }}>
-      <Link to="/service/orders">← К списку</Link>
+      <Link to="/service/orders" className="restaurant-page__back muted">← К списку</Link>
       {banner && (
         <div
           className={`card objects-banner${isOrderPublicationSuccessMessage(banner) ? '' : ' objects-banner--warn'}`}

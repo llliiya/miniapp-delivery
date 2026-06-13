@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DEV_AUTH_ENABLED } from '../../config.js'
 import {
+  fetchRestaurantPartnerProgram,
   listOrders,
   listOrganizationMembers,
   listPickupPoints,
 } from '../../api/deliveryService.js'
+import PartnerProgramSection from '../../components/partner/PartnerProgramSection.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useRestaurantId } from '../../hooks/useActiveOrg.js'
 import { labelForRole, labelForStatus } from '../../utils/displayLabels.js'
@@ -90,6 +92,11 @@ export default function RestaurantProfilePage() {
     }
   }, [restaurantId])
 
+  const loadPartnerProgram = useCallback(
+    () => fetchRestaurantPartnerProgram(restaurantId),
+    [restaurantId],
+  )
+
   return (
     <div className="role-profile-page">
       <header className="role-profile-page__header">
@@ -146,6 +153,12 @@ export default function RestaurantProfilePage() {
           <p className="role-profile-stat__value">{quickStats.staff}</p>
         </article>
       </section>
+
+      <PartnerProgramSection
+        loadProgram={loadPartnerProgram}
+        disabled={!restaurantId}
+        disabledMessage="Раздел доступен сотрудникам объекта."
+      />
 
       {DEV_AUTH_ENABLED && (
         <section className="card service-profile-dev">

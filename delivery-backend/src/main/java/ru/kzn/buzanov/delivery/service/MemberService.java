@@ -245,7 +245,7 @@ public class MemberService {
             profile.setUpdatedAt(now);
             courierProfileRepository.save(profile);
         }
-        partnerCodeService.ensurePartnerCode(memberId);
+        partnerCodeService.ensurePartnerCodeForCourier(memberId);
     }
 
     private static String resolveDisplayName(String displayName, String fallback) {

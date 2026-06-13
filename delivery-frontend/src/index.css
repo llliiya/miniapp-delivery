@@ -32,10 +32,45 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   height: var(--header-height);
   padding: 0 16px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+}
+
+.app-header__start {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.app-header__back {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  margin-left: -8px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-header__back:hover {
+  background: var(--color-primary-light);
+}
+
+.app-header__back:active {
+  transform: scale(0.96);
 }
 
 .app-header__brand {
@@ -70,6 +105,18 @@ a {
 
 .app-main--standalone {
   padding-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .app-header__back {
+    display: inline-flex;
+  }
+
+  .restaurant-page__back,
+  .objects-page__back,
+  .order-detail-page__back {
+    display: none;
+  }
 }
 
 .text-error {
@@ -2806,4 +2853,133 @@ a {
 
 .restaurant-staff-empty--managers {
   margin-bottom: 0;
+}
+
+.partner-program-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% + 32px);
+  margin: -16px -16px 0;
+  padding: 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.partner-program-section__toggle .role-profile-section__title {
+  margin: 0;
+}
+
+.partner-program-section__chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #6b7280;
+  border-bottom: 2px solid #6b7280;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.partner-program-section__chevron--open {
+  transform: rotate(-135deg);
+}
+
+.partner-program-section__intro {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.partner-program-section__body {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.partner-program-invites {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.partner-program-invite {
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.partner-program-invite__title {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.partner-program-invite__hint {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.partner-program-invite__url {
+  word-break: break-all;
+  margin: 0 0 10px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.partner-program-invite__qr {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.partner-program-invite__code {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+
+.partner-program-stats {
+  margin-bottom: 16px;
+}
+
+.partner-program-stats p {
+  margin: 6px 0;
+}
+
+.partner-program-referrals__title {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.partner-program-referral {
+  margin-top: 10px;
+  padding: 12px;
+}
+
+.partner-program-referral__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.partner-program-referral__type {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.partner-program-referral p {
+  margin: 4px 0;
+  font-size: 13px;
 }

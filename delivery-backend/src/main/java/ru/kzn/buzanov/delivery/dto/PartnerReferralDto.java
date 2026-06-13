@@ -1,15 +1,16 @@
 package ru.kzn.buzanov.delivery.dto;
 
-import ru.kzn.buzanov.delivery.domain.RestaurantRegistrationRequestStatus;
+import ru.kzn.buzanov.delivery.domain.PartnerReferralType;
 
 import java.time.Instant;
 import java.util.UUID;
 
 public record PartnerReferralDto(
         UUID requestId,
-        String restaurantName,
+        PartnerReferralType referralType,
+        String displayName,
         Instant submittedAt,
-        RestaurantRegistrationRequestStatus status,
+        String status,
         Instant connectedAt
 ) {
 }
