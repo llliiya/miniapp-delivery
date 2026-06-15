@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 # deploy-delivery-full.sh — полный деплой delivery на выделенной машине.
-# Секреты и домен: miniapp-deploy/deploy/prod-stack.env (на сервере, не в git).
+# Конфиг и секреты: miniapp-delivery/docker-compose.prod.yml
 # Git: export GITHUB_TOKEN=... перед запуском (не коммитить в репозиторий).
 
 set -euo pipefail
 
-# --- настройки деплоя ---
-GITHUB_TOKEN="${GITHUB_TOKEN:-}"
+GITHUB_TOKEN="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"
 GITHUB_ORG="llliiya"
 BRANCH="main"
 DEPLOY_ROOT="/opt/delivery"
-# Переопределите при необходимости: ENV_FILE=/opt/delivery/prod-stack.env
-ENV_FILE="${ENV_FILE:-}"
-
 WORKSPACE="$DEPLOY_ROOT/workspace"
+COMPOSE_FILE="$WORKSPACE/miniapp-delivery/docker-compose.prod.yml"
 
 REPOS=(
   miniapp-deploy
@@ -27,42 +24,9 @@ clone_url() {
   echo "https://${GITHUB_TOKEN}@github.com/${GITHUB_ORG}/$1.git"
 }
 
-resolve_env_file() {
-  if [[ -n "$ENV_FILE" && -f "$ENV_FILE" ]]; then
-    echo "$ENV_FILE"
-    return
-  fi
-  local candidates=(
-    "$DEPLOY_ROOT/prod-stack.env"
-    "$WORKSPACE/miniapp-deploy/deploy/prod-stack.env"
-  )
-  for candidate in "${candidates[@]}"; do
-    if [[ -f "$candidate" ]]; then
-      echo "$candidate"
-      return
-    fi
-  done
-  echo ""
-}
-
-load_deploy_domain_from_env() {
-  local env_file="$1"
-  # shellcheck disable=SC1090
-  set -a
-  source "$env_file"
-  set +a
-
-  if [[ -n "${DELIVERY_TLS_DOMAIN:-}" ]]; then
-    DEPLOY_DOMAIN="$DELIVERY_TLS_DOMAIN"
-    return
-  fi
-  if [[ -n "${FRONTEND_DELIVERY_URL:-}" ]]; then
-    DEPLOY_DOMAIN="${FRONTEND_DELIVERY_URL#https://}"
-    DEPLOY_DOMAIN="${DEPLOY_DOMAIN#http://}"
-    DEPLOY_DOMAIN="${DEPLOY_DOMAIN%%/*}"
-    return
-  fi
-  DEPLOY_DOMAIN=""
+load_deploy_domain_from_compose() {
+  local compose_file="$1"
+  DEPLOY_DOMAIN="$(grep -E '^\s+DOMAIN:' "$compose_file" | head -1 | sed -E 's/^[[:space:]]+DOMAIN:[[:space:]]*//' | tr -d '\r')"
 }
 
 echo "===== DEPLOY DELIVERY FULL STARTED ====="
@@ -73,14 +37,9 @@ docker compose version >/dev/null 2>&1 || { echo "❌ docker compose plugin не
 
 [[ -n "$GITHUB_TOKEN" ]] || { echo "❌ export GITHUB_TOKEN=... перед запуском"; exit 1; }
 
-if [[ -f "$WORKSPACE/miniapp-delivery/docker-compose.prod.yml" ]]; then
+if [[ -f "$COMPOSE_FILE" ]]; then
   echo "[0] Остановка предыдущего stack"
-  PREV_ENV="$(resolve_env_file)"
-  if [[ -n "$PREV_ENV" ]]; then
-    (cd "$WORKSPACE/miniapp-delivery" && docker compose --env-file "$PREV_ENV" -f docker-compose.prod.yml down) || true
-  else
-    (cd "$WORKSPACE/miniapp-delivery" && docker compose -f docker-compose.prod.yml down) || true
-  fi
+  (cd "$WORKSPACE/miniapp-delivery" && docker compose -f docker-compose.prod.yml down) || true
 fi
 
 echo "[1] Подготовка $WORKSPACE"
@@ -94,21 +53,14 @@ for repo in "${REPOS[@]}"; do
   git clone --depth 1 -b "$BRANCH" "$(clone_url "$repo")" "$repo"
 done
 
-RESOLVED_ENV_FILE="$(resolve_env_file)"
-[[ -n "$RESOLVED_ENV_FILE" ]] || {
-  echo "❌ prod-stack.env не найден. Скопируйте на сервер один из путей:"
-  echo "   $DEPLOY_ROOT/prod-stack.env"
-  echo "   $WORKSPACE/miniapp-deploy/deploy/prod-stack.env"
-  exit 1
-}
-echo "[2a] Env file: $RESOLVED_ENV_FILE"
+[[ -f "$COMPOSE_FILE" ]] || { echo "❌ Не найден $COMPOSE_FILE"; exit 1; }
 
-load_deploy_domain_from_env "$RESOLVED_ENV_FILE"
+load_deploy_domain_from_compose "$COMPOSE_FILE"
 [[ -n "${DEPLOY_DOMAIN:-}" ]] || {
-  echo "❌ Задайте DELIVERY_TLS_DOMAIN или FRONTEND_DELIVERY_URL в $RESOLVED_ENV_FILE"
+  echo "❌ DOMAIN не найден в docker-compose.prod.yml (delivery-frontend.environment.DOMAIN)"
   exit 1
 }
-echo "[2b] Deploy domain (TLS): $DEPLOY_DOMAIN"
+echo "[2a] Deploy domain (TLS): $DEPLOY_DOMAIN"
 
 CERT_DIR="/etc/letsencrypt/live/${DEPLOY_DOMAIN}"
 if [[ ! -f "${CERT_DIR}/fullchain.pem" || ! -f "${CERT_DIR}/privkey.pem" ]]; then
@@ -126,15 +78,15 @@ fi
 if command -v systemctl >/dev/null; then
   for svc in nginx apache2; do
     if systemctl is-active --quiet "$svc" 2>/dev/null; then
-      echo "[2c] Останавливаем $svc (конфликт портов 80/443 с delivery-frontend)"
+      echo "[2b] Останавливаем $svc (конфликт портов 80/443 с delivery-frontend)"
       systemctl stop "$svc" || true
     fi
   done
 fi
 
-echo "[3] Docker compose up (--env-file $RESOLVED_ENV_FILE)"
+echo "[3] Docker compose up"
 cd "$WORKSPACE/miniapp-delivery"
-docker compose --env-file "$RESOLVED_ENV_FILE" -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml up -d --build
 
 echo ""
 echo "===== DEPLOY DELIVERY FULL FINISHED ====="

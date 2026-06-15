@@ -15,12 +15,14 @@ UI `http://localhost:5173`, API `http://localhost:8080/api/...`, Postgres `:5430
 
 ## Prod
 
-1. Секреты и домен: `miniapp-deploy/deploy/prod-stack.env` на сервере (`DELIVERY_TLS_DOMAIN=85.239.58.129.sslip.io`)
+1. Все значения в `docker-compose.prod.yml` (домен: `85.239.58.129.sslip.io`)
 2. `export GITHUB_TOKEN=...` перед запуском скрипта
 3. certbot: `/etc/letsencrypt/live/85.239.58.129.sslip.io/`
 4. `bash deploy/deploy-delivery-full.sh`
 
 Порты на хосте: **80**, **443** (контейнер `delivery-frontend`).
+
+Старый `prod-stack.env` на сервере **не используется** — можно удалить или переименовать.
 
 ## Nginx и API снаружи
 
