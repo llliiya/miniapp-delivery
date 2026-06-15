@@ -17,27 +17,23 @@ UI `http://localhost:5173`, API `http://localhost:8080/api/...`, Postgres `:5430
 
 ## Prod
 
-1. Правки секретов и домена в `docker-compose.prod.yml`
+1. Секреты и домен: `miniapp-deploy/deploy/prod-stack.env` на сервере
 2. `export GITHUB_TOKEN=...` перед запуском скрипта
-3. certbot: `/etc/letsencrypt/live/<DOMAIN>/`
+3. TLS на хосте: nginx + certbot (`miniapp-deploy/deploy/nginx-delivery.buzanov-vo.ru.conf`)
 4. `bash deploy/deploy-delivery-full.sh`
 
-Порты на хосте: **80**, **443** (контейнер `delivery-frontend`).
+Порты Docker на хосте: **gateway :8080**, **frontend :5173** (или из env: `DEV_DELIVERY_GATEWAY_PORT`, `DEV_DELIVERY_FRONTEND_PORT`).
 
 ## Nginx и API снаружи
 
 ```
 Интернет :443
-    → delivery-frontend (nginx в контейнере)
-        /           → статика SPA
-        /api/       → gateway:8080 → delivery-backend / account / notification
+    → nginx на хосте (TLS)
+        /api/  → 127.0.0.1:8080 (gateway)
+        /      → 127.0.0.1:5173 (delivery-frontend, статика SPA)
 ```
 
-Файлы: `delivery-frontend/nginx.prod.conf` (volume в compose), `delivery-frontend/Dockerfile`.
-
-Gateway и backend **не** проброшены на хост — API только через `https://<DOMAIN>/api/...`.
-
-На хосте не должно быть другого nginx/apache на 80/443 (`deploy-delivery-full.sh` останавливает их).
+Gateway и backend **не** проброшены на 443 — API снаружи через `https://<DOMAIN>/api/...` (прокси host nginx).
 
 ## Репозитории для clone
 

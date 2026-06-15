@@ -113,23 +113,13 @@ echo "[2b] Deploy domain (TLS): $DEPLOY_DOMAIN"
 CERT_DIR="/etc/letsencrypt/live/${DEPLOY_DOMAIN}"
 if [[ ! -f "${CERT_DIR}/fullchain.pem" || ! -f "${CERT_DIR}/privkey.pem" ]]; then
   echo "⚠️  Сертификаты не найдены: ${CERT_DIR}"
-  echo "   certbot certonly --standalone -d ${DEPLOY_DOMAIN}"
+  echo "   certbot certonly --webroot -w /var/www/certbot -d ${DEPLOY_DOMAIN}"
   if [[ -t 0 ]]; then
     read -r -p "Продолжить? [y/N] " ans
     [[ "${ans:-}" =~ ^[yY]$ ]] || exit 1
   else
     exit 1
   fi
-fi
-
-# delivery-frontend (nginx) занимает :80 и :443 на хосте — освобождаем от system nginx/apache
-if command -v systemctl >/dev/null; then
-  for svc in nginx apache2; do
-    if systemctl is-active --quiet "$svc" 2>/dev/null; then
-      echo "[2c] Останавливаем $svc (конфликт портов 80/443 с delivery-frontend)"
-      systemctl stop "$svc" || true
-    fi
-  done
 fi
 
 echo "[3] Docker compose up (--env-file $RESOLVED_ENV_FILE)"
