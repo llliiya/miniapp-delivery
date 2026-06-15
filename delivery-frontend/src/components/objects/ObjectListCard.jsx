@@ -15,6 +15,10 @@ export default function ObjectListCard({ object, stats }) {
           <dd>{object.publicId ?? '—'}</dd>
         </div>
         <div className="objects-list-card__row">
+          <dt>Город</dt>
+          <dd>{object.city || '—'}</dd>
+        </div>
+        <div className="objects-list-card__row">
           <dt>Каналов публикации</dt>
           <dd>{channelCount}</dd>
         </div>

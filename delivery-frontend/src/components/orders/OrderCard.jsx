@@ -44,7 +44,12 @@ export default function OrderCard({
         <span className={orderStatusBadgeClass(order.status)}>{orderStatusLabel(order.status)}</span>
       </div>
 
-      {restaurantName ? <p className="order-card__restaurant">{restaurantName}</p> : null}
+      {restaurantName ? (
+        <p className="order-card__restaurant">
+          {restaurantName}
+          {order.restaurantCity ? ` · ${order.restaurantCity}` : ''}
+        </p>
+      ) : null}
 
       <div className="order-card__block">
         <div className="order-card__label">Забрать:</div>

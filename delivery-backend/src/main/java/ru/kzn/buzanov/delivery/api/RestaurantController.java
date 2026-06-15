@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import ru.kzn.buzanov.delivery.dto.CreateRestaurantResponse;
@@ -37,9 +38,12 @@ public class RestaurantController {
     }
 
     @GetMapping
-    public List<OrganizationDto> list(HttpServletRequest request) {
+    public List<OrganizationDto> list(
+            HttpServletRequest request,
+            @RequestParam(required = false) UUID courierServiceId,
+            @RequestParam(required = false) String city) {
         var user = CurrentUserHolder.require(request);
-        return restaurantService.list(user.userId());
+        return restaurantService.list(user.userId(), courierServiceId, city);
     }
 
     @GetMapping("/{id}")

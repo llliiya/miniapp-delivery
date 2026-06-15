@@ -50,9 +50,10 @@ public class OrderController {
             @RequestParam(required = false) UUID restaurantId,
             @RequestParam(required = false) UUID courierServiceId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant dateFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant dateTo) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant dateTo,
+            @RequestParam(required = false) String city) {
         var user = CurrentUserHolder.require(request);
-        return orderService.list(user.userId(), scope, status, restaurantId, courierServiceId, dateFrom, dateTo);
+        return orderService.list(user.userId(), scope, status, restaurantId, courierServiceId, dateFrom, dateTo, city);
     }
 
     @GetMapping("/orders/{id}")

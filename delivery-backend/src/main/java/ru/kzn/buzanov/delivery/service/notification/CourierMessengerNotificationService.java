@@ -19,6 +19,8 @@ import ru.kzn.buzanov.delivery.config.DeliveryBotProperties;
 import ru.kzn.buzanov.delivery.domain.DeliveryOrder;
 import ru.kzn.buzanov.delivery.integration.AccountUserClient;
 import ru.kzn.buzanov.delivery.integration.AccountUserContacts;
+import ru.kzn.buzanov.delivery.service.DeliveryDeepLinkService;
+import ru.kzn.buzanov.delivery.service.publication.MaxOpenAppButtons;
 import ru.kzn.buzanov.delivery.service.publication.OrderMessageFormatter;
 import ru.kzn.buzanov.delivery.service.publication.TelegramKeyboardFactory;
 
@@ -33,6 +35,8 @@ public class CourierMessengerNotificationService {
     private final OrderMessageFormatter messageFormatter;
     private final TelegramKeyboardFactory keyboardFactory;
     private final DeliveryBotProperties properties;
+    private final DeliveryDeepLinkService deepLinkService;
+    private final MaxOpenAppButtons maxOpenAppButtons;
     private final ObjectMapper objectMapper;
 
     public CourierMessengerNotificationService(
@@ -41,12 +45,16 @@ public class CourierMessengerNotificationService {
             OrderMessageFormatter messageFormatter,
             TelegramKeyboardFactory keyboardFactory,
             DeliveryBotProperties properties,
+            DeliveryDeepLinkService deepLinkService,
+            MaxOpenAppButtons maxOpenAppButtons,
             ObjectMapper objectMapper) {
         this.telegramBot = telegramBot;
         this.accountUserClient = accountUserClient;
         this.messageFormatter = messageFormatter;
         this.keyboardFactory = keyboardFactory;
         this.properties = properties;
+        this.deepLinkService = deepLinkService;
+        this.maxOpenAppButtons = maxOpenAppButtons;
         this.objectMapper = objectMapper;
     }
 
@@ -145,11 +153,16 @@ public class CourierMessengerNotificationService {
         for (List<TelegramKeyboardFactory.LinkButton> row : buttonRows) {
             ArrayNode rowNode = objectMapper.createArrayNode();
             for (TelegramKeyboardFactory.LinkButton button : row) {
-                ObjectNode linkBtn = objectMapper.createObjectNode();
-                linkBtn.put("type", "link");
-                linkBtn.put("url", button.url());
-                linkBtn.put("text", button.label());
-                rowNode.add(linkBtn);
+                ObjectNode btn = objectMapper.createObjectNode();
+                if ("open_app".equals(button.maxButtonType())) {
+                    btn = maxOpenAppButtons.openAppButton(
+                            button.label(), deepLinkService.maxOpenAppTarget(button.startParam()));
+                } else {
+                    btn.put("type", "link");
+                    btn.put("url", button.url());
+                    btn.put("text", button.label());
+                }
+                rowNode.add(btn);
             }
             rows.add(rowNode);
         }

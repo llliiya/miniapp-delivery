@@ -5,6 +5,7 @@ import {
 } from '../api/deliveryService.js'
 import { clearToken, fetchAuthMe, getToken, refreshAccessToken } from '../api/http.js'
 import { tryMessengerAuth } from '../auth/authBootstrap.js'
+import { isAccessTokenExpired } from '../utils/tokenStorage.js'
 import { DEV_AUTH_ENABLED } from '../config.js'
 import {
   findMembership,
@@ -35,10 +36,17 @@ export function AuthProvider({ children }) {
   const bootstrap = useCallback(async () => {
     setLoading(true)
     try {
+      let token = getToken()
+      if (token && isAccessTokenExpired(token)) {
+        token = await refreshAccessToken()
+        if (!token) {
+          clearToken()
+        }
+      }
       if (!getToken()) {
         await tryMessengerAuth()
       }
-      let token = getToken()
+      token = getToken()
       if (!token) {
         token = await refreshAccessToken()
       }

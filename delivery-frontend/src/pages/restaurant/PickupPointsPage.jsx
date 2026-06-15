@@ -160,18 +160,20 @@ export default function PickupPointsPage() {
   }
 
   return (
-    <div className={serviceContext ? 'objects-page' : undefined}>
+    <div className={`pickup-points-page${serviceContext ? ' objects-page' : ''}`}>
       {serviceContext && (
         <Link to={`/service/restaurants/${restaurantId}`} className="objects-page__back muted">
           ← К карточке объекта
         </Link>
       )}
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>Точки забора</h2>
-        <button type="button" className="btn" onClick={openCreate}>
-          Добавить
-        </button>
-      </div>
+      <header className="pickup-points-page__header">
+        <h1 className="pickup-points-page__title">Точки забора</h1>
+        {!showForm && (
+          <button type="button" className="btn pickup-points-page__add-btn" onClick={openCreate}>
+            Добавить
+          </button>
+        )}
+      </header>
 
       {message && <p className="card" style={{ color: '#b91c1c' }}>{message}</p>}
 

@@ -23,7 +23,8 @@ public class DeliveryDtoMapper {
                 org.getOwnerUserId(),
                 org.getCourierServiceId(),
                 org.isActive(),
-                org.getCreatedAt()
+                org.getCreatedAt(),
+                org.getCity()
         );
     }
 

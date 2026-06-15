@@ -5,6 +5,7 @@ import ServiceOrderCard from '../../components/orders/ServiceOrderCard.jsx'
 import ServiceOrdersEmptyState from '../../components/orders/ServiceOrdersEmptyState.jsx'
 import ServiceOrdersFilters from '../../components/orders/ServiceOrdersFilters.jsx'
 import ServiceOrdersStats from '../../components/orders/ServiceOrdersStats.jsx'
+import { useServiceCity } from '../../context/ServiceCityContext.jsx'
 import { useCourierServiceId } from '../../hooks/useActiveOrg.js'
 import {
   computeServiceOrderStats,
@@ -17,6 +18,7 @@ export default function ServiceOrdersPage() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const courierServiceId = useCourierServiceId()
+  const { cityQueryParam } = useServiceCity()
   const [orders, setOrders] = useState([])
   const [restaurants, setRestaurants] = useState([])
   const [restaurantFilter, setRestaurantFilter] = useState(() => searchParams.get('object') || '')
@@ -24,7 +26,6 @@ export default function ServiceOrdersPage() {
   const [objectSearch, setObjectSearch] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
 
@@ -32,15 +33,18 @@ export default function ServiceOrdersPage() {
     const objectId = searchParams.get('object')
     if (objectId) {
       setRestaurantFilter(objectId)
-      setFiltersOpen(true)
     }
   }, [searchParams])
 
   useEffect(() => {
-    listRestaurants()
-      .then((list) => setRestaurants((list || []).filter((r) => r.courierServiceId === courierServiceId)))
+    listRestaurants(
+      courierServiceId
+        ? { courierServiceId, ...(cityQueryParam ? { city: cityQueryParam } : {}) }
+        : undefined,
+    )
+      .then((list) => setRestaurants(list || []))
       .catch(() => {})
-  }, [courierServiceId])
+  }, [courierServiceId, cityQueryParam])
 
   const restaurantNameById = useMemo(
     () => Object.fromEntries(restaurants.map((r) => [r.id, r.name])),
@@ -66,6 +70,7 @@ export default function ServiceOrdersPage() {
         end.setHours(23, 59, 59, 999)
         params.dateTo = end.toISOString()
       }
+      if (cityQueryParam) params.city = cityQueryParam
       setOrders((await listOrders(params)) || [])
     } catch (e) {
       setMessage(e?.message || 'Не удалось загрузить заказы')
@@ -73,7 +78,7 @@ export default function ServiceOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }, [courierServiceId, restaurantFilter, dateFrom, dateTo])
+  }, [courierServiceId, restaurantFilter, dateFrom, dateTo, cityQueryParam])
 
   useEffect(() => {
     reload()
@@ -126,8 +131,6 @@ export default function ServiceOrdersPage() {
       <ServiceOrdersStats stats={stats} loading={loading} />
 
       <ServiceOrdersFilters
-        open={filtersOpen}
-        onToggle={() => setFiltersOpen((v) => !v)}
         statusFilter={statusFilter}
         onStatusFilter={setStatusFilter}
         filteredRestaurants={filteredRestaurants}
@@ -140,7 +143,6 @@ export default function ServiceOrdersPage() {
         dateTo={dateTo}
         onDateFrom={setDateFrom}
         onDateTo={setDateTo}
-        restaurantNameById={restaurantNameById}
       />
 
       {message && (

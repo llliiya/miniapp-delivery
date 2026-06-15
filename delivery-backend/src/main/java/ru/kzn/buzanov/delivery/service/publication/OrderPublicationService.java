@@ -13,6 +13,7 @@ import ru.kzn.buzanov.delivery.domain.PublicationStatus;
 import ru.kzn.buzanov.delivery.domain.PublicationChannel;
 import ru.kzn.buzanov.delivery.domain.RestaurantChannelBinding;
 import ru.kzn.buzanov.delivery.dto.OrderPublicationFailureDto;
+import ru.kzn.buzanov.delivery.repository.DeliveryOrderRepository;
 import ru.kzn.buzanov.delivery.repository.OrderChannelPostRepository;
 import ru.kzn.buzanov.delivery.repository.PublicationChannelRepository;
 import ru.kzn.buzanov.delivery.repository.RestaurantChannelBindingRepository;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderPublicationService {
 
+    private final DeliveryOrderRepository orderRepository;
     private final RestaurantChannelBindingRepository bindingRepository;
     private final PublicationChannelRepository channelRepository;
     private final OrderChannelPostRepository postRepository;
@@ -60,6 +62,7 @@ public class OrderPublicationService {
         }
         if (sentCount > 0) {
             order.setPublishedAt(now);
+            orderRepository.save(order);
         }
         return buildPublicationWarnings(sentCount, failedCount);
     }
@@ -98,11 +101,21 @@ public class OrderPublicationService {
         }
         if (sentCount > 0 && order.getPublishedAt() == null) {
             order.setPublishedAt(now);
+            orderRepository.save(order);
         }
         if (sentCount == 0 && skippedCount > 0 && failedCount == 0) {
             return List.of();
         }
         return buildPublicationWarnings(sentCount, failedCount);
+    }
+
+    public Optional<Instant> firstSentPostAt(UUID orderId) {
+        return postRepository.findByOrderId(orderId).stream()
+                .filter(post -> post.getStatus() == ChannelPostStatus.sent
+                        && post.getExternalMessageId() != null
+                        && !post.getExternalMessageId().isBlank())
+                .map(OrderChannelPost::getCreatedAt)
+                .min(Instant::compareTo);
     }
 
     /**
@@ -111,11 +124,9 @@ public class OrderPublicationService {
      */
     @Transactional
     public void syncOrder(DeliveryOrder order, String courierName) {
-        if (order.getPublishedAt() == null) {
-            return;
-        }
         List<OrderChannelPost> posts = postRepository.findByOrderId(order.getId());
         if (posts.isEmpty()) {
+            log.debug("Синхронизация заказа №{}: нет постов в каналах", order.getPublicNumber());
             return;
         }
         Map<UUID, OrderChannelPost> latestByChannel = latestPostsByChannel(posts);
@@ -123,7 +134,13 @@ public class OrderPublicationService {
                 .collect(Collectors.toMap(PublicationChannel::getId, Function.identity()));
         Instant now = Instant.now();
         for (OrderChannelPost post : latestByChannel.values()) {
-            if (post.getStatus() != ChannelPostStatus.sent || post.getExternalMessageId() == null) {
+            if (!isSyncablePost(post)) {
+                log.warn(
+                        "Синхронизация заказа №{}: пропуск канала {} (status={}, messageId={})",
+                        order.getPublicNumber(),
+                        post.getChannelId(),
+                        post.getStatus(),
+                        post.getExternalMessageId());
                 continue;
             }
             PublicationChannel channel = channels.get(post.getChannelId());
@@ -131,6 +148,12 @@ public class OrderPublicationService {
                 continue;
             }
             String chatId = post.getExternalChatId() != null ? post.getExternalChatId() : channel.getExternalId();
+            log.info(
+                    "Синхронизация заказа №{} в канале «{}» ({}) messageId={}",
+                    order.getPublicNumber(),
+                    channel.getName(),
+                    channel.getType(),
+                    post.getExternalMessageId());
             ChannelEditResult result = editOrderMessage(channel, chatId, post.getExternalMessageId(), order, courierName);
             if (result.success()) {
                 post.setUpdatedAt(now);
@@ -197,10 +220,18 @@ public class OrderPublicationService {
         if (warnings.contains("no_active_channels") || warnings.contains("publication_failed")) {
             return PublicationStatus.failed;
         }
-        if (order.getPublishedAt() != null) {
+        if (order.getPublishedAt() != null || firstSentPostAt(order.getId()).isPresent()) {
             return PublicationStatus.published;
         }
         return PublicationStatus.failed;
+    }
+
+    private static boolean isSyncablePost(OrderChannelPost post) {
+        if (post.getStatus() != ChannelPostStatus.sent) {
+            return false;
+        }
+        String messageId = post.getExternalMessageId();
+        return messageId != null && !messageId.isBlank() && !"sent".equalsIgnoreCase(messageId.trim());
     }
 
     private List<String> buildPublicationWarnings(int sentCount, int failedCount) {

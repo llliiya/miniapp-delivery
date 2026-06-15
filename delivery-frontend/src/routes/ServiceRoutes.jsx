@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import RoleShell from '../layouts/RoleShell.jsx'
+import { ServiceCityProvider } from '../context/ServiceCityContext.jsx'
 import ServiceOrdersPage from '../pages/service/ServiceOrdersPage.jsx'
 import NewOrderPage from '../pages/shared/NewOrderPage.jsx'
 import ServiceOrderDetailPage from '../pages/service/ServiceOrderDetailPage.jsx'
@@ -25,8 +26,9 @@ const NAV = [
 
 export default function ServiceRoutes() {
   return (
-    <Routes>
-      <Route element={<RoleShell navItems={NAV} title="Курьерская служба" />}>
+    <ServiceCityProvider>
+      <Routes>
+        <Route element={<RoleShell navItems={NAV} title="Курьерская служба" showCityFilter />}>
         <Route index element={<Navigate to="orders" replace />} />
         <Route path="orders" element={<ServiceOrdersPage />} />
         <Route path="orders/new" element={<NewOrderPage />} />
@@ -43,7 +45,8 @@ export default function ServiceRoutes() {
         <Route path="channels" element={<ChannelsPage />} />
         <Route path="profile" element={<ServiceProfilePage />} />
         {DEV_AUTH_ENABLED && <Route path="admin" element={<ServiceAdminPage />} />}
-      </Route>
-    </Routes>
+        </Route>
+      </Routes>
+    </ServiceCityProvider>
   )
 }

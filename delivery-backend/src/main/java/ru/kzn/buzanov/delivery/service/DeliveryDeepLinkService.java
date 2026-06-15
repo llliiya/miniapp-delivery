@@ -115,6 +115,50 @@ public class DeliveryDeepLinkService {
         return maxStartAppUrl(myOrderStartParam(orderId), courierMyOrderWebUrl(orderId));
     }
 
+    /**
+     * Поля кнопки MAX {@code open_app}: {@code web_app} — username бота или URL, {@code payload} — start_param.
+     */
+    public record MaxOpenAppTarget(String webApp, String payload) {}
+
+    public MaxOpenAppTarget maxOrderOpenAppTarget(UUID orderId) {
+        return maxOpenAppTarget(orderStartParam(orderId));
+    }
+
+    public MaxOpenAppTarget maxMyOrderOpenAppTarget(UUID orderId) {
+        return maxOpenAppTarget(myOrderStartParam(orderId));
+    }
+
+    /**
+     * @see <a href="https://dev.max.ru/docs-api">MAX API open_app</a>: {@code web_app} + {@code payload}, не {@code webApp}-URL фронта.
+     */
+    public MaxOpenAppTarget maxOpenAppTarget(String startParam) {
+        String username = normalizeBotUsername(properties.getMax().getBotUsername());
+        if (!username.isEmpty()) {
+            return new MaxOpenAppTarget(username, startParam);
+        }
+        String frontend = trimTrailingSlash(properties.getFrontendUrl());
+        if (!frontend.isEmpty()) {
+            return new MaxOpenAppTarget(frontend, startParam);
+        }
+        return new MaxOpenAppTarget(maxStartAppUrl(startParam, ""), "");
+    }
+
+    /**
+     * @deprecated для кнопок open_app используйте {@link #maxOrderOpenAppTarget(UUID)}; оставлено для link-fallback.
+     */
+    @Deprecated
+    public String maxOrderOpenAppWebUrl(UUID orderId) {
+        return telegramOrderWebAppButtonUrl(orderId);
+    }
+
+    /**
+     * @deprecated для кнопок open_app используйте {@link #maxMyOrderOpenAppTarget(UUID)}.
+     */
+    @Deprecated
+    public String maxMyOrderOpenAppWebUrl(UUID orderId) {
+        return telegramMyOrderWebAppButtonUrl(orderId);
+    }
+
     private String maxStartAppUrl(String startParam, String fallbackUrl) {
         String username = properties.getMax().getBotUsername();
         if (username != null && !username.isBlank()) {

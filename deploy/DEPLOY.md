@@ -13,7 +13,7 @@
 docker compose -f miniapp-delivery/docker-compose.dev.yml up --build -d
 ```
 
-UI `http://localhost:5172`, API `http://localhost:8081/api/...`, Postgres `:5430`.
+UI `http://localhost:5173`, API `http://localhost:8080/api/...`, Postgres `:5430`.
 
 ## Prod
 

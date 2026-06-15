@@ -49,4 +49,7 @@ public class Organization {
 
     @Column(name = "partner_code", length = 8)
     private String partnerCode;
+
+    @Column(length = 128)
+    private String city;
 }

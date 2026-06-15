@@ -20,6 +20,7 @@ import ru.kzn.buzanov.delivery.util.EmailRequirements;
 import ru.kzn.buzanov.delivery.integration.account.AccountProvisionResult;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationRepository;
+import ru.kzn.buzanov.delivery.util.CityNormalizer;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -58,6 +59,7 @@ public class RestaurantService {
     private CreateRestaurantResponse createWithOwnerProvisioning(
             Long actorUserId, CreateRestaurantRequest request, boolean recordAudit) {
         accessControl.requireServiceStaff(actorUserId, request.courierServiceId());
+        String city = requireCity(request.city());
         var owner = request.owner();
         // TECH-DEBT: account provisioning commits before delivery TX. On failure after provision,
         // orphan account users remain (idempotency by phone, deactivation, compensating internal API — later).
@@ -75,6 +77,7 @@ public class RestaurantService {
         org.setName(request.name().trim());
         org.setOwnerUserId(provisioned.userId());
         org.setCourierServiceId(request.courierServiceId());
+        org.setCity(city);
         org.setActive(true);
         org.setCreatedAt(now);
         organizationRepository.saveAndFlush(org);
@@ -104,6 +107,7 @@ public class RestaurantService {
 
     private OrganizationDto createLegacy(Long userId, CreateRestaurantRequest request) {
         accessControl.requireServiceStaff(userId, request.courierServiceId());
+        String city = requireCity(request.city());
         Instant now = Instant.now();
         Organization org = new Organization();
         org.setId(UUID.randomUUID());
@@ -111,6 +115,7 @@ public class RestaurantService {
         org.setName(request.name().trim());
         org.setOwnerUserId(userId);
         org.setCourierServiceId(request.courierServiceId());
+        org.setCity(city);
         org.setActive(true);
         org.setCreatedAt(now);
         organizationRepository.saveAndFlush(org);
@@ -118,7 +123,8 @@ public class RestaurantService {
     }
 
     @Transactional(readOnly = true)
-    public List<OrganizationDto> list(Long userId) {
+    public List<OrganizationDto> list(Long userId, UUID courierServiceId, String city) {
+        String cityFilter = CityNormalizer.normalize(city);
         List<OrganizationMember> memberships = memberRepository.findByUserId(userId);
         Map<UUID, Organization> restaurants = new LinkedHashMap<>();
 
@@ -143,6 +149,8 @@ public class RestaurantService {
         }
         return restaurants.values().stream()
                 .filter(Organization::isActive)
+                .filter(r -> courierServiceId == null || courierServiceId.equals(r.getCourierServiceId()))
+                .filter(r -> cityFilter == null || CityNormalizer.equals(r.getCity(), cityFilter))
                 .map(mapper::toOrganizationDto)
                 .toList();
     }
@@ -170,7 +178,22 @@ public class RestaurantService {
         if (request.active() != null) {
             restaurant.setActive(request.active());
         }
+        if (request.city() != null) {
+            if (restaurant.getCourierServiceId() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "У объекта не указана курьерская служба");
+            }
+            accessControl.requireServiceStaff(userId, restaurant.getCourierServiceId());
+            restaurant.setCity(CityNormalizer.normalize(request.city()));
+        }
         organizationRepository.save(restaurant);
         return mapper.toOrganizationDto(restaurant);
+    }
+
+    private static String requireCity(String rawCity) {
+        String city = CityNormalizer.normalize(rawCity);
+        if (city == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Укажите город");
+        }
+        return city;
     }
 }

@@ -53,3 +53,15 @@ export function removeToken() {
 export function clearAuthClientStorage() {
   removeToken()
 }
+
+/** @param {string | null | undefined} token @param {number} [skewSec] */
+export function isAccessTokenExpired(token, skewSec = 60) {
+  if (!token) return true
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    if (!payload?.exp) return false
+    return payload.exp <= Math.floor(Date.now() / 1000) + skewSec
+  } catch {
+    return true
+  }
+}

@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "delivery")
 public class DeliveryBotProperties {
 
-    private String frontendUrl = "http://localhost:5174";
+    private String frontendUrl = "http://localhost:5173";
     /** Публичный URL фронта/API для webhook Telegram. По умолчанию — frontend-url. */
     private String publicApiUrl = "";
 

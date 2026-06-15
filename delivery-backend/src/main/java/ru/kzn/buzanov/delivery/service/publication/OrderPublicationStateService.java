@@ -36,6 +36,9 @@ public class OrderPublicationStateService {
         if (order == null) {
             return;
         }
+        if (order.getPublishedAt() == null) {
+            publicationService.firstSentPostAt(orderId).ifPresent(order::setPublishedAt);
+        }
         order.setPublicationStatus(publicationService.resolvePublicationStatusAfterPublish(warnings, order));
         orderRepository.save(order);
         publicationEventPublisher.publishUpdated(order);

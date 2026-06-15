@@ -32,8 +32,21 @@ export function listOrganizations() {
   return deliveryApi('/organizations')
 }
 
-export function listRestaurants() {
-  return deliveryApi('/restaurants')
+export function listRestaurants(params) {
+  const q = new URLSearchParams()
+  Object.entries(params || {}).forEach(([k, v]) => {
+    if (v != null && v !== '') q.set(k, v)
+  })
+  const qs = q.toString()
+  return deliveryApi(`/restaurants${qs ? `?${qs}` : ''}`)
+}
+
+export function getRestaurant(restaurantId) {
+  return deliveryApi(`/restaurants/${restaurantId}`)
+}
+
+export function listServiceCities(courierServiceId) {
+  return deliveryApi(`/organizations/${courierServiceId}/cities`)
 }
 
 export function listCouriers(courierServiceId) {
@@ -92,8 +105,10 @@ export function deletePickupPoint(pointId) {
   return deliveryApi(`/pickup-points/${pointId}`, 'DELETE')
 }
 
-export function listChannels(courierServiceId) {
-  return deliveryApi(`/channels?courierServiceId=${courierServiceId}`)
+export function listChannels(courierServiceId, city) {
+  const params = new URLSearchParams({ courierServiceId })
+  if (city) params.set('city', city)
+  return deliveryApi(`/channels?${params}`)
 }
 
 export function createChannel(body) {
@@ -199,8 +214,10 @@ export function submitCourierRequest(body) {
   })
 }
 
-export function listCourierRequests(courierServiceId) {
-  return deliveryApi(`/courier-requests?courierServiceId=${courierServiceId}`)
+export function listCourierRequests(courierServiceId, city) {
+  const params = new URLSearchParams({ courierServiceId })
+  if (city) params.set('city', city)
+  return deliveryApi(`/courier-requests?${params}`)
 }
 
 export function rejectCourierRequest(requestId, courierServiceId) {

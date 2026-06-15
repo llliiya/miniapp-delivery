@@ -24,6 +24,7 @@ import ru.kzn.buzanov.delivery.integration.account.AccountProvisionResult;
 import ru.kzn.buzanov.delivery.repository.CourierRequestRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
 import ru.kzn.buzanov.delivery.service.notification.CourierRequestNotificationService;
+import ru.kzn.buzanov.delivery.util.CityNormalizer;
 import ru.kzn.buzanov.delivery.util.EmailRequirements;
 
 import java.time.Instant;
@@ -119,7 +120,7 @@ public class CourierRequestService {
         entity.setFullName(fullName);
         entity.setPhone(phone);
         entity.setEmail(email);
-        entity.setCity(city);
+        entity.setCity(CityNormalizer.normalize(city));
         entity.setComment(comment);
         entity.setTransport(request.transport() != null && !request.transport().isBlank()
                 ? request.transport().trim()
@@ -140,9 +141,11 @@ public class CourierRequestService {
     }
 
     @Transactional(readOnly = true)
-    public List<CourierRequestDto> listPending(Long userId, UUID courierServiceId) {
+    public List<CourierRequestDto> listPending(Long userId, UUID courierServiceId, String city) {
         accessControl.requireServiceStaff(userId, courierServiceId);
+        String cityFilter = CityNormalizer.normalize(city);
         return requestRepository.findByStatusOrderByCreatedAtDesc(CourierRequestStatus.NEW).stream()
+                .filter(request -> cityFilter == null || CityNormalizer.equals(request.getCity(), cityFilter))
                 .map(this::toDto)
                 .toList();
     }

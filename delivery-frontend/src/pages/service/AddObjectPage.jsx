@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { createRestaurant } from '../../api/deliveryService.js'
+import { createRestaurant, listServiceCities } from '../../api/deliveryService.js'
 import ProvisioningCredentialsModal from '../../components/ProvisioningCredentialsModal.jsx'
 import PhoneInput from '../../components/PhoneInput.jsx'
 import { useCourierServiceId } from '../../hooks/useActiveOrg.js'
@@ -10,6 +10,8 @@ export default function AddObjectPage() {
   const navigate = useNavigate()
   const courierServiceId = useCourierServiceId()
   const [name, setName] = useState('')
+  const [city, setCity] = useState('')
+  const [cityOptions, setCityOptions] = useState([])
   const [ownerFullName, setOwnerFullName] = useState('')
   const [ownerPhone, setOwnerPhone] = useState('')
   const [ownerEmail, setOwnerEmail] = useState('')
@@ -18,6 +20,13 @@ export default function AddObjectPage() {
   const [ownerCredentials, setOwnerCredentials] = useState(null)
   const [createdObjectId, setCreatedObjectId] = useState(null)
 
+  useEffect(() => {
+    if (!courierServiceId) return
+    listServiceCities(courierServiceId)
+      .then((list) => setCityOptions(list || []))
+      .catch(() => setCityOptions([]))
+  }, [courierServiceId])
+
   const onSubmit = async (e) => {
     e.preventDefault()
     if (!courierServiceId) {
@@ -25,10 +34,15 @@ export default function AddObjectPage() {
       return
     }
     const trimmed = name.trim()
+    const cityVal = city.trim()
     const ownerName = ownerFullName.trim()
     const ownerPhoneVal = ownerPhone.trim()
     if (!trimmed) {
       setError('Укажите название объекта')
+      return
+    }
+    if (!cityVal) {
+      setError('Укажите город')
       return
     }
     const ownerEmailVal = ownerEmail.trim()
@@ -42,6 +56,7 @@ export default function AddObjectPage() {
     try {
       const created = await createRestaurant({
         name: trimmed,
+        city: cityVal,
         courierServiceId,
         owner: {
           fullName: ownerName,
@@ -119,6 +134,23 @@ export default function AddObjectPage() {
               autoFocus
               required
             />
+          </label>
+
+          <label className="objects-form__label">
+            Город
+            <input
+              className="input"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Например, Казань"
+              list="service-city-options"
+              required
+            />
+            <datalist id="service-city-options">
+              {cityOptions.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </label>
 
           <h2 className="objects-form__section-title">Владелец объекта</h2>

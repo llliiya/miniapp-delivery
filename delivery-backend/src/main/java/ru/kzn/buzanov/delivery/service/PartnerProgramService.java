@@ -39,7 +39,7 @@ public class PartnerProgramService {
     private final PartnerCodeService partnerCodeService;
     private final AccessControlService accessControl;
 
-    @Value("${delivery.frontend-url:http://localhost:5174}")
+    @Value("${delivery.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
     @Transactional(readOnly = true)

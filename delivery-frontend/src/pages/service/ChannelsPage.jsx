@@ -6,10 +6,13 @@ import {
   patchChannel,
 } from '../../api/deliveryService.js'
 import ChannelCard from '../../components/channels/ChannelCard.jsx'
+import ChannelsPageHelp from '../../components/channels/ChannelsPageHelp.jsx'
 import EmptyState, { EmptyStateIcon } from '../../components/EmptyState.jsx'
 import { useCourierServiceId } from '../../hooks/useActiveOrg.js'
+import { useServiceCity } from '../../context/ServiceCityContext.jsx'
 import {
   CHANNEL_EXTERNAL_ID_HINT,
+  CHANNEL_MAX_ID_STEPS,
   CHANNEL_TELEGRAM_ID_STEPS,
   channelExternalIdLabel,
 } from '../../utils/channelFormLabels.js'
@@ -25,25 +28,25 @@ const emptyForm = {
 
 export default function ChannelsPage() {
   const courierServiceId = useCourierServiceId()
+  const { cityQueryParam } = useServiceCity()
   const [channels, setChannels] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [form, setForm] = useState(emptyForm)
   const [editId, setEditId] = useState(null)
   const [showForm, setShowForm] = useState(false)
-  const [showChannelHelp, setShowChannelHelp] = useState(false)
 
   const reload = useCallback(async () => {
     if (!courierServiceId) return
     setLoading(true)
     try {
-      setChannels((await listChannels(courierServiceId)) || [])
+      setChannels((await listChannels(courierServiceId, cityQueryParam)) || [])
     } catch (e) {
       setMessage(e?.message || 'Ошибка загрузки')
     } finally {
       setLoading(false)
     }
-  }, [courierServiceId])
+  }, [courierServiceId, cityQueryParam])
 
   useEffect(() => {
     reload()
@@ -113,43 +116,17 @@ export default function ChannelsPage() {
   }
 
   return (
-    <div>
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0 }}>Каналы / группы</h2>
-          <button type="button" className="btn" onClick={openCreate}>
-            Добавить
-          </button>
-        </div>
-        <p className="muted" style={{ margin: '12px 0 0', fontSize: 14 }}>
-          {CHANNEL_EXTERNAL_ID_HINT}
-        </p>
-        <p className="muted" style={{ margin: '8px 0 0', fontSize: 14 }}>
-          Важно: бот должен быть добавлен в канал или группу и иметь право отправлять сообщения.
-        </p>
-        <p className="muted" style={{ margin: '4px 0 0', fontSize: 14 }}>
-          Для канала Telegram добавьте бота администратором канала.
-        </p>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          style={{ marginTop: 12 }}
-          onClick={() => setShowChannelHelp((v) => !v)}
-        >
-          Как проверить канал?
+    <div className="channels-page">
+      <header className="channels-page__header">
+        <h1 className="channels-page__title">Каналы / группы</h1>
+        <button type="button" className="btn channels-page__add-btn" onClick={openCreate}>
+          Добавить
         </button>
-        {showChannelHelp ? (
-          <ol className="muted" style={{ margin: '12px 0 0', paddingLeft: 20, fontSize: 14 }}>
-            <li>Убедитесь, что в настройках указан правильный ID канала.</li>
-            <li>Добавьте бота в канал.</li>
-            <li>Назначьте бота администратором.</li>
-            <li>Разрешите боту публиковать сообщения.</li>
-            <li>После этого откройте заказ и нажмите «Повторить публикацию».</li>
-          </ol>
-        ) : null}
-      </div>
+      </header>
 
-      {message && <p style={{ color: '#b91c1c' }}>{message}</p>}
+      <ChannelsPageHelp />
+
+      {message && <p style={{ color: '#b91c1c', margin: 0 }}>{message}</p>}
 
       {showForm && (
         <form className="card form-stack" onSubmit={onSubmit}>
@@ -203,6 +180,11 @@ export default function ChannelsPage() {
               {CHANNEL_TELEGRAM_ID_STEPS}
             </p>
           )}
+          {form.type === 'max' && (
+            <p className="muted" style={{ margin: '0 0 12px', fontSize: 13, whiteSpace: 'pre-line' }}>
+              {CHANNEL_MAX_ID_STEPS}
+            </p>
+          )}
           <label>
             Город
             <input
@@ -246,15 +228,17 @@ export default function ChannelsPage() {
           description="Подключите Telegram-канал для публикации заказов курьерам."
         />
       ) : (
-        channels.map((ch) => (
-          <ChannelCard
-            key={ch.id}
-            channel={ch}
-            showTechnicalId
-            onEdit={openEdit}
-            onDeactivate={onDeactivate}
-          />
-        ))
+        <div className="channels-page__list">
+          {channels.map((ch) => (
+            <ChannelCard
+              key={ch.id}
+              channel={ch}
+              showTechnicalId
+              onEdit={openEdit}
+              onDeactivate={onDeactivate}
+            />
+          ))}
+        </div>
       )}
     </div>
   )

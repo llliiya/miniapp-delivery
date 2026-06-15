@@ -15,19 +15,16 @@ export default function CourierMyOrderDetailPage() {
   const { orderId } = useParams()
   const navigate = useNavigate()
 
-  if (isBlockedCourier) {
-    return <BlockedCourierScreen />
-  }
-
-  if (isPendingCourier) {
-    return <Navigate to="/courier/my-orders" replace />
-  }
   const [order, setOrder] = useState(null)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
 
   const reload = useCallback(async () => {
+    if (isPendingCourier || isBlockedCourier) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       setOrder(await getOrder(orderId))
@@ -36,7 +33,7 @@ export default function CourierMyOrderDetailPage() {
     } finally {
       setLoading(false)
     }
-  }, [orderId])
+  }, [orderId, isPendingCourier, isBlockedCourier])
 
   useEffect(() => {
     reload()
@@ -58,6 +55,14 @@ export default function CourierMyOrderDetailPage() {
     } finally {
       setUpdating(false)
     }
+  }
+
+  if (isBlockedCourier) {
+    return <BlockedCourierScreen />
+  }
+
+  if (isPendingCourier) {
+    return <Navigate to="/courier/my-orders" replace />
   }
 
   if (loading) {

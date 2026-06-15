@@ -33,9 +33,10 @@ public class PublicationChannelController {
     @GetMapping
     public List<PublicationChannelDto> list(
             HttpServletRequest request,
-            @RequestParam UUID courierServiceId) {
+            @RequestParam UUID courierServiceId,
+            @RequestParam(required = false) String city) {
         var user = CurrentUserHolder.require(request);
-        return publicationChannelService.list(user.userId(), courierServiceId);
+        return publicationChannelService.list(user.userId(), courierServiceId, city);
     }
 
     @PostMapping

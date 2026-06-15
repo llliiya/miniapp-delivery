@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { listOrders } from '../../api/deliveryService.js'
 import { subscribeOrderEvents } from '../../api/orderEvents.js'
 import BlockedCourierScreen from '../../components/courier/BlockedCourierScreen.jsx'
@@ -10,12 +10,16 @@ import OrderListItem from '../shared/OrderListItem.jsx'
 import {
   capturePendingOrderDeeplink,
   consumePendingOrderDeeplink,
+  isDeeplinkHandled,
+  isOnCourierOrderRoute,
+  markDeeplinkHandled,
   readStartParamFromEnvironment,
   resolveCourierOrderDeeplinkPath,
 } from '../../utils/deeplink.js'
 
 export default function CourierOrdersPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isPendingCourier, isBlockedCourier } = useAuth()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -38,14 +42,20 @@ export default function CourierOrdersPage() {
 
   useEffect(() => {
     if (isPendingCourier || isBlockedCourier) return
+    if (isDeeplinkHandled()) return
     capturePendingOrderDeeplink()
     const orderId = readStartParamFromEnvironment()
+    if (orderId && isOnCourierOrderRoute(location.pathname, orderId)) {
+      markDeeplinkHandled()
+      return
+    }
     const path = resolveCourierOrderDeeplinkPath(orderId)
     if (path) {
       consumePendingOrderDeeplink()
+      markDeeplinkHandled()
       navigate(path, { replace: true })
     }
-  }, [isPendingCourier, isBlockedCourier, navigate])
+  }, [isPendingCourier, isBlockedCourier, navigate, location.pathname])
 
   useEffect(() => {
     if (isPendingCourier || isBlockedCourier) {

@@ -100,8 +100,56 @@
     </script>
     <script>
       (function () {
+        function storeDeliveryOrderStartParam(startParam) {
+          if (!startParam || typeof startParam !== 'string') return;
+          try {
+            if (startParam.indexOf('delivery_order_') === 0) {
+              sessionStorage.setItem(
+                'delivery_pending_order_id',
+                startParam.slice('delivery_order_'.length),
+              );
+              sessionStorage.setItem('delivery_pending_order_kind', 'free');
+            } else if (startParam.indexOf('delivery_my_order_') === 0) {
+              sessionStorage.setItem(
+                'delivery_pending_order_id',
+                startParam.slice('delivery_my_order_'.length),
+              );
+              sessionStorage.setItem('delivery_pending_order_kind', 'my');
+            }
+          } catch (e) {}
+        }
+
+        function readStartParamFromUrl() {
+          try {
+            var params = new URLSearchParams(window.location.search || '');
+            return (
+              params.get('start_param') ||
+              params.get('startapp') ||
+              params.get('tgWebAppStartParam') ||
+              params.get('WebAppStartParam')
+            );
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function captureFromWebAppBridge() {
+          var webApp = window.WebApp;
+          if (!webApp) return false;
+          var startParam =
+            (webApp.initDataUnsafe && webApp.initDataUnsafe.start_param) || readStartParamFromUrl();
+          if (startParam) {
+            storeDeliveryOrderStartParam(startParam);
+            return true;
+          }
+          return false;
+        }
+
         try {
-          if (window.__forcedPlatform === 'max') return;
+          if (window.__forcedPlatform === 'max') {
+            captureFromWebAppBridge();
+            return;
+          }
           var tg = window.Telegram && window.Telegram.WebApp;
           if (tg && typeof tg.initData === 'string' && tg.initData.length > 0) {
             if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
@@ -116,29 +164,15 @@
               var startParam =
                 (tg.initDataUnsafe && tg.initDataUnsafe.start_param) ||
                 (typeof tg.getStartParam === 'function' ? tg.getStartParam() : null) ||
-                tg.startParam;
-              if (!startParam) {
-                var params = new URLSearchParams(window.location.search || '');
-                startParam =
-                  params.get('start_param') ||
-                  params.get('startapp') ||
-                  params.get('tgWebAppStartParam');
-              }
-              if (startParam && startParam.indexOf('delivery_order_') === 0) {
-                sessionStorage.setItem(
-                  'delivery_pending_order_id',
-                  startParam.slice('delivery_order_'.length),
-                );
-                sessionStorage.setItem('delivery_pending_order_kind', 'free');
-              } else if (startParam && startParam.indexOf('delivery_my_order_') === 0) {
-                sessionStorage.setItem(
-                  'delivery_pending_order_id',
-                  startParam.slice('delivery_my_order_'.length),
-                );
-                sessionStorage.setItem('delivery_pending_order_kind', 'my');
-              }
+                tg.startParam ||
+                readStartParamFromUrl();
+              storeDeliveryOrderStartParam(startParam);
             } catch (e) {}
+            return;
           }
+          if (captureFromWebAppBridge()) return;
+          var urlStartParam = readStartParamFromUrl();
+          if (urlStartParam) storeDeliveryOrderStartParam(urlStartParam);
         } catch (e) {}
       })();
     </script>

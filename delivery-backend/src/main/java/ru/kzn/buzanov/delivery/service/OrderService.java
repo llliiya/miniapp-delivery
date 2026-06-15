@@ -34,11 +34,13 @@ import ru.kzn.buzanov.delivery.service.publication.OrderChannelProjectionService
 import ru.kzn.buzanov.delivery.service.publication.OrderPublicationService;
 import ru.kzn.buzanov.delivery.service.realtime.OrderAssignmentEventPublisher;
 import ru.kzn.buzanov.delivery.service.realtime.OrderPublicationEventPublisher;
+import ru.kzn.buzanov.delivery.util.CityNormalizer;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -107,8 +109,10 @@ public class OrderService {
             UUID restaurantId,
             UUID courierServiceId,
             Instant dateFrom,
-            Instant dateTo) {
-        Specification<DeliveryOrder> spec = buildListSpec(userId, scope, status, restaurantId, courierServiceId, dateFrom, dateTo);
+            Instant dateTo,
+            String city) {
+        Specification<DeliveryOrder> spec = buildListSpec(
+                userId, scope, status, restaurantId, courierServiceId, dateFrom, dateTo, city);
         return orderRepository.findAll(spec).stream().map(order -> toDto(order, userId)).toList();
     }
 
@@ -191,7 +195,7 @@ public class OrderService {
             changed = true;
         }
         order = orderRepository.save(order);
-        if (changed && order.getPublishedAt() != null) {
+        if (changed) {
             channelProjectionService.syncOrder(order, resolveCourierDisplayName(order, order.getCourierUserId()));
         }
         List<String> warnings = List.of();
@@ -207,9 +211,7 @@ public class OrderService {
         order.setStatus(OrderStatus.cancelled);
         order.setCancelledAt(Instant.now());
         order = orderRepository.save(order);
-        if (order.getPublishedAt() != null) {
-            channelProjectionService.syncOrder(order, resolveCourierDisplayName(order, order.getCourierUserId()));
-        }
+        channelProjectionService.syncOrder(order, resolveCourierDisplayName(order, order.getCourierUserId()));
         return toDto(order, userId);
     }
 
@@ -231,9 +233,7 @@ public class OrderService {
         }
         order = requireOrder(orderId);
         String courierName = resolveCourierDisplayName(order, courierId);
-        if (order.getPublishedAt() != null) {
-            channelProjectionService.syncOrder(order, courierName);
-        }
+        channelProjectionService.syncOrder(order, courierName);
         courierMessengerNotificationService.notifyOrderAssigned(order, courierId);
         assignmentEventPublisher.publishAssigned(order);
         return toDto(order, actorUserId);
@@ -272,9 +272,7 @@ public class OrderService {
 
         applyStatusChange(order, newStatus);
         order = orderRepository.save(order);
-        if (order.getPublishedAt() != null) {
-            channelProjectionService.syncOrder(order, resolveCourierDisplayName(order, order.getCourierUserId()));
-        }
+        channelProjectionService.syncOrder(order, resolveCourierDisplayName(order, order.getCourierUserId()));
         return toDto(order, userId);
     }
 
@@ -310,8 +308,10 @@ public class OrderService {
             UUID restaurantId,
             UUID courierServiceId,
             Instant dateFrom,
-            Instant dateTo) {
+            Instant dateTo,
+            String city) {
         String normalizedScope = scope == null ? "" : scope.trim().toLowerCase();
+        String cityFilter = CityNormalizer.normalize(city);
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -387,6 +387,15 @@ public class OrderService {
             if (dateTo != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), dateTo));
             }
+            if (cityFilter != null && "service".equals(normalizedScope)) {
+                var restaurantSubquery = query.subquery(Long.class);
+                var orgRoot = restaurantSubquery.from(Organization.class);
+                restaurantSubquery.select(cb.literal(1L));
+                restaurantSubquery.where(
+                        cb.equal(orgRoot.get("id"), root.get("restaurantId")),
+                        cb.equal(cb.lower(orgRoot.get("city")), cityFilter.toLowerCase(Locale.ROOT)));
+                predicates.add(cb.exists(restaurantSubquery));
+            }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
     }
@@ -421,9 +430,13 @@ public class OrderService {
     }
 
     private OrderDto buildDto(DeliveryOrder order) {
-        String restaurantName = organizationRepository.findById(order.getRestaurantId())
-                .map(Organization::getName)
-                .orElse(null);
+        String restaurantName = null;
+        String restaurantCity = null;
+        Optional<Organization> restaurant = organizationRepository.findById(order.getRestaurantId());
+        if (restaurant.isPresent()) {
+            restaurantName = restaurant.get().getName();
+            restaurantCity = restaurant.get().getCity();
+        }
         Long courierPublicId = null;
         String courierDisplayName = null;
         if (order.getCourierUserId() != null && order.getCourierServiceId() != null) {
@@ -459,6 +472,7 @@ public class OrderService {
                 courierPublicId,
                 courierDisplayName,
                 restaurantName,
+                restaurantCity,
                 order.getCreatedByUserId(),
                 order.getCreatedByOrganizationId(),
                 resolveCreatedBySource(order),
@@ -521,6 +535,7 @@ public class OrderService {
                 dto.courierPublicId(),
                 dto.courierDisplayName(),
                 dto.restaurantName(),
+                dto.restaurantCity(),
                 dto.createdByUserId(),
                 dto.createdByOrganizationId(),
                 dto.createdBySource(),

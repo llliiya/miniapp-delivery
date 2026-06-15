@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useSwipeBackDisabledOnRoots } from './hooks/useSwipeBack.js'
 import { useTelegramBackButton } from './hooks/useTelegramBackButton.js'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
@@ -18,6 +18,10 @@ import JoinCourierPage from './pages/auth/JoinCourierPage.jsx'
 import {
   capturePendingOrderDeeplink,
   consumePendingOrderDeeplink,
+  logDeeplink,
+  markDeeplinkHandled,
+  isDeeplinkHandled,
+  isOnCourierOrderRoute,
   peekPendingOrderDeeplinkPath,
   readMyOrdersDeeplinkFromEnvironment,
   readRawStartParamFromEnvironment,
@@ -43,6 +47,7 @@ function RequireAuth({ children }) {
 
 function DeeplinkHandler() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated, interfaceMode, isPendingCourier, isBlockedCourier } = useAuth()
 
   useEffect(() => {
@@ -57,29 +62,49 @@ function DeeplinkHandler() {
 
     const tryNavigate = () => {
       if (cancelled) return true
+      if (isDeeplinkHandled()) {
+        logDeeplink('navigate_skipped', { reason: 'deeplink_handled' })
+        return true
+      }
+
+      const rawStartParam = readRawStartParamFromEnvironment()
+      const envOrderId = readStartParamFromEnvironment()
+      if (envOrderId && isOnCourierOrderRoute(location.pathname, envOrderId)) {
+        markDeeplinkHandled()
+        logDeeplink('navigate_skipped', { reason: 'already_on_order_route', path: location.pathname })
+        return true
+      }
+
       capturePendingOrderDeeplink()
       if (readMyOrdersDeeplinkFromEnvironment()) {
+        logDeeplink('navigate', { target: '/courier/my-orders', reason: 'my_orders_start_param' })
+        markDeeplinkHandled()
         navigate('/courier/my-orders', { replace: true })
         return true
       }
-      if (isPendingCourier) return true
+      if (isPendingCourier) {
+        logDeeplink('navigate_skipped', { reason: 'pending_courier' })
+        return true
+      }
 
-      const rawStartParam = readRawStartParamFromEnvironment()
       let path = peekPendingOrderDeeplinkPath()
       if (!path) {
-        const orderId = readStartParamFromEnvironment()
-        if (orderId) {
-          path = resolveCourierOrderDeeplinkPath(orderId, rawStartParam)
+        if (envOrderId) {
+          path = resolveCourierOrderDeeplinkPath(envOrderId, rawStartParam)
         }
       }
 
       if (path) {
         consumePendingOrderDeeplink()
+        markDeeplinkHandled()
+        logDeeplink('navigate', { target: path, rawStartParam })
         navigate(path, { replace: true })
         return true
       }
       return false
     }
+
+    logDeeplink('handler_start', { isAuthenticated, interfaceMode, isPendingCourier, isBlockedCourier, path: location.pathname })
 
     if (tryNavigate()) return undefined
 
@@ -94,7 +119,7 @@ function DeeplinkHandler() {
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [navigate, isAuthenticated, interfaceMode, isPendingCourier, isBlockedCourier])
+  }, [navigate, location.pathname, isAuthenticated, interfaceMode, isPendingCourier, isBlockedCourier])
 
   return null
 }

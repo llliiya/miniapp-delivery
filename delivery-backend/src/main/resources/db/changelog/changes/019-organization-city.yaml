@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-organization-city
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: organizations
+            columns:
+              - column:
+                  name: city
+                  type: varchar(128)
+        - sql:
+            sql: |
+              CREATE INDEX idx_organizations_service_city
+              ON delivery.organizations (courier_service_id, city)
+              WHERE type = 'client_restaurant';

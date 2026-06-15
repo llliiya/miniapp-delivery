@@ -12,6 +12,7 @@ import EmptyState, { EmptyStateIcon } from '../../components/EmptyState.jsx'
 import ProvisioningCredentialsModal from '../../components/ProvisioningCredentialsModal.jsx'
 import PhoneInput from '../../components/PhoneInput.jsx'
 import { useCourierServiceId } from '../../hooks/useActiveOrg.js'
+import { useServiceCity } from '../../context/ServiceCityContext.jsx'
 import { mapDeliveryApiError } from '../../utils/mapApiError.js'
 import { runLatestResetAccess } from '../../utils/runLatestResetAccess.js'
 
@@ -44,6 +45,7 @@ function statusBadgeClass(status) {
 
 export default function ServiceCouriersPage() {
   const courierServiceId = useCourierServiceId()
+  const { cityQueryParam } = useServiceCity()
   const [couriers, setCouriers] = useState([])
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
@@ -69,13 +71,13 @@ export default function ServiceCouriersPage() {
     }
     setApplicationsLoading(true)
     try {
-      setApplications((await listCourierRequests(courierServiceId)) || [])
+      setApplications((await listCourierRequests(courierServiceId, cityQueryParam)) || [])
     } catch {
       setApplications([])
     } finally {
       setApplicationsLoading(false)
     }
-  }, [courierServiceId])
+  }, [courierServiceId, cityQueryParam])
 
   const reload = useCallback(async () => {
     if (!courierServiceId) {
@@ -235,7 +237,7 @@ export default function ServiceCouriersPage() {
   }
 
   return (
-    <div>
+    <div className="service-couriers-page">
       <ProvisioningCredentialsModal
         key={
           credentials
@@ -294,15 +296,14 @@ export default function ServiceCouriersPage() {
         </div>
       )}
 
-      <div className="card">
-        <h2 style={{ marginTop: 0 }}>Курьеры</h2>
-        <p className="muted">
-          Создайте курьера по ФИО и телефону. Система выдаст логин и временный пароль для первого входа.
-        </p>
-        <button type="button" className="btn" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? 'Скрыть форму' : 'Добавить курьера'}
-        </button>
-      </div>
+      <header className="service-couriers-page__header">
+        <h1 className="service-couriers-page__title">Курьеры</h1>
+        {!showForm && (
+          <button type="button" className="btn service-couriers-page__add-btn" onClick={() => setShowForm(true)}>
+            Добавить
+          </button>
+        )}
+      </header>
 
       {message && (
         <div

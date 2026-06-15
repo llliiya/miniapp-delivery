@@ -23,6 +23,8 @@ import ru.kzn.buzanov.delivery.dto.request.RestaurantOwnerRequest;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationRepository;
 import ru.kzn.buzanov.delivery.repository.RestaurantRegistrationRequestRepository;
+import ru.kzn.buzanov.delivery.util.AddressShortener;
+import ru.kzn.buzanov.delivery.util.CityNormalizer;
 import ru.kzn.buzanov.delivery.util.EmailRequirements;
 
 import java.time.Instant;
@@ -141,6 +143,7 @@ public class RestaurantRegistrationRequestService {
         CreateRestaurantRequest createRequest = new CreateRestaurantRequest(
                 entity.getRestaurantName(),
                 courierServiceId,
+                cityFromRegistrationAddress(entity.getAddress()),
                 new RestaurantOwnerRequest(
                         entity.getContactPerson(),
                         entity.getPhone(),
@@ -307,5 +310,18 @@ public class RestaurantRegistrationRequestService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static String cityFromRegistrationAddress(String address) {
+        String shortened = AddressShortener.shorten(address);
+        if (shortened.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Не удалось определить город из адреса заявки");
+        }
+        String cityPart = shortened.contains(",") ? shortened.substring(0, shortened.indexOf(',')) : shortened;
+        String city = CityNormalizer.normalize(cityPart);
+        if (city == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Не удалось определить город из адреса заявки");
+        }
+        return city;
     }
 }

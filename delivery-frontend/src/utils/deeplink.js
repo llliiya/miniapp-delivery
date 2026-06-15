@@ -1,6 +1,45 @@
 const STORAGE_KEY = 'delivery_pending_order_id'
 const STORAGE_KIND_KEY = 'delivery_pending_order_kind'
+const HANDLED_KEY = 'delivery_deeplink_handled'
 export const MY_ORDERS_START_PARAM = 'delivery_my_orders'
+
+function shouldLogDeeplink() {
+  if (typeof window === 'undefined') return false
+  try {
+    if (import.meta.env?.DEV) return true
+    if (window.localStorage?.getItem('debug_deeplink') === '1') return true
+  } catch {
+    // ignore
+  }
+  if (window.WebApp) return true
+  const search = window.location.search || ''
+  return /tgWebAppPlatform=max|WebAppStartParam|startapp=/i.test(search)
+}
+
+/**
+ * Диагностика deeplink: raw start_param, orderId, маршрут.
+ * @param {string} phase
+ * @param {Record<string, unknown>} [extra]
+ */
+export function logDeeplink(phase, extra = {}) {
+  if (!shouldLogDeeplink()) return
+  const rawStartParam = readRawStartParamFromEnvironment()
+  const resolvedOrderId = readOrderIdFromStartParam(rawStartParam)
+  const resolvedPath = resolvedOrderId
+    ? resolveCourierOrderDeeplinkPath(resolvedOrderId, rawStartParam)
+    : null
+  const pending = {
+    orderId: typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(STORAGE_KEY) : null,
+    kind: typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(STORAGE_KIND_KEY) : null,
+  }
+  console.info('[delivery deeplink]', phase, {
+    rawStartParam,
+    resolvedOrderId,
+    resolvedPath,
+    pending,
+    ...extra,
+  })
+}
 
 function decodeStartParam(value) {
   if (value == null || value === '') return null
@@ -29,6 +68,39 @@ function collectUrlSearchParams() {
     // ignore
   }
   return result
+}
+
+export function markDeeplinkHandled() {
+  try {
+    sessionStorage.setItem(HANDLED_KEY, '1')
+    sessionStorage.removeItem(STORAGE_KEY)
+    sessionStorage.removeItem(STORAGE_KIND_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+export function isDeeplinkHandled() {
+  try {
+    return sessionStorage.getItem(HANDLED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function normalizePathname(pathname) {
+  if (!pathname) return '/'
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    return pathname.slice(0, -1)
+  }
+  return pathname
+}
+
+/** Уже на карточке заказа (свободный или мой) — не дёргать deeplink повторно. */
+export function isOnCourierOrderRoute(pathname, orderId) {
+  if (!orderId) return false
+  const path = normalizePathname(pathname)
+  return path === `/courier/orders/${orderId}` || path === `/courier/my-orders/${orderId}`
 }
 
 export function readRawStartParamFromEnvironment() {
@@ -86,11 +158,18 @@ export function resolveCourierOrderDeeplinkPath(orderId, rawStartParam = readRaw
 }
 
 export function capturePendingOrderDeeplink() {
+  if (isDeeplinkHandled()) {
+    logDeeplink('capture', { stored: false, reason: 'already_handled' })
+    return null
+  }
   const raw = readRawStartParamFromEnvironment()
   const orderId = readOrderIdFromStartParam(raw)
   if (orderId) {
     sessionStorage.setItem(STORAGE_KEY, orderId)
     sessionStorage.setItem(STORAGE_KIND_KEY, isMyOrderStartParam(raw) ? 'my' : 'free')
+    logDeeplink('capture', { stored: true })
+  } else {
+    logDeeplink('capture', { stored: false })
   }
   return orderId
 }
@@ -101,8 +180,11 @@ export function consumePendingOrderDeeplink() {
   if (orderId) {
     sessionStorage.removeItem(STORAGE_KEY)
     sessionStorage.removeItem(STORAGE_KIND_KEY)
+    const path = kind === 'my' ? `/courier/my-orders/${orderId}` : `/courier/orders/${orderId}`
+    logDeeplink('consume', { orderId, kind, navigatedPath: path })
     return { orderId, kind }
   }
+  logDeeplink('consume', { consumed: false })
   return null
 }
 

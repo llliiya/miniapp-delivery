@@ -13,6 +13,7 @@ public record OrganizationDto(
         Long ownerUserId,
         UUID courierServiceId,
         boolean active,
-        Instant createdAt
+        Instant createdAt,
+        String city
 ) {
 }

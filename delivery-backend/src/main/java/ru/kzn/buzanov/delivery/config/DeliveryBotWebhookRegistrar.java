@@ -9,6 +9,8 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
+import ru.kzn.buzanov.delivery.bot.DeliveryMaxBotClient;
+
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -20,15 +22,21 @@ public class DeliveryBotWebhookRegistrar implements ApplicationListener<Applicat
 
     private final ObjectProvider<TelegramBot> telegramBot;
     private final DeliveryBotProperties properties;
+    private final DeliveryMaxBotClient maxBotClient;
 
-    public DeliveryBotWebhookRegistrar(ObjectProvider<TelegramBot> telegramBot, DeliveryBotProperties properties) {
+    public DeliveryBotWebhookRegistrar(
+            ObjectProvider<TelegramBot> telegramBot,
+            DeliveryBotProperties properties,
+            DeliveryMaxBotClient maxBotClient) {
         this.telegramBot = telegramBot;
         this.properties = properties;
+        this.maxBotClient = maxBotClient;
     }
 
     @Override
     public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
         CompletableFuture.runAsync(this::registerTelegramWebhook);
+        CompletableFuture.runAsync(this::registerMaxWebhook);
     }
 
     private void registerTelegramWebhook() {
@@ -71,6 +79,25 @@ public class DeliveryBotWebhookRegistrar implements ApplicationListener<Applicat
             }
         } catch (Exception e) {
             log.error("Delivery bot: webhook registration failed: {}", e.getMessage());
+        }
+    }
+
+    private void registerMaxWebhook() {
+        String token = properties.getMax().getBotToken();
+        if (token == null || token.isBlank()) {
+            log.info("Delivery MAX bot: token is empty, skip webhook registration");
+            return;
+        }
+        String publicUrl = resolvePublicApiUrl();
+        if (publicUrl == null || publicUrl.isBlank()) {
+            log.warn("Delivery MAX bot: public API URL is empty, skip webhook registration");
+            return;
+        }
+        String base = publicUrl.endsWith("/") ? publicUrl.substring(0, publicUrl.length() - 1) : publicUrl;
+        String webhookUrl = base + "/api/max/webhook";
+        log.info("Delivery MAX bot: registering webhook url={}", webhookUrl);
+        if (!maxBotClient.registerWebhook(webhookUrl)) {
+            log.warn("Delivery MAX bot: webhook registration failed");
         }
     }
 

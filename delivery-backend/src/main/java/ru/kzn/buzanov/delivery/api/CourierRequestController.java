@@ -45,9 +45,10 @@ public class CourierRequestController {
     @GetMapping("/courier-requests")
     public List<CourierRequestDto> listPending(
             HttpServletRequest request,
-            @RequestParam UUID courierServiceId) {
+            @RequestParam UUID courierServiceId,
+            @RequestParam(required = false) String city) {
         var user = CurrentUserHolder.require(request);
-        return courierRequestService.listPending(user.userId(), courierServiceId);
+        return courierRequestService.listPending(user.userId(), courierServiceId, city);
     }
 
     @PatchMapping("/courier-requests/{requestId}/approve")

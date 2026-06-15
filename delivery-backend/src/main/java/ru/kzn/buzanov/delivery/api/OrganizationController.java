@@ -24,6 +24,7 @@ import ru.kzn.buzanov.delivery.dto.request.PatchMemberRequest;
 import ru.kzn.buzanov.delivery.dto.request.PatchOrganizationRequest;
 import ru.kzn.buzanov.delivery.service.MemberService;
 import ru.kzn.buzanov.delivery.service.OrganizationService;
+import ru.kzn.buzanov.delivery.service.ServiceCityService;
 import ru.kzn.buzanov.delivery.web.CurrentUser;
 import ru.kzn.buzanov.delivery.web.CurrentUserHolder;
 
@@ -37,6 +38,7 @@ public class OrganizationController {
 
     private final OrganizationService organizationService;
     private final MemberService memberService;
+    private final ServiceCityService serviceCityService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -49,6 +51,14 @@ public class OrganizationController {
     public List<OrganizationDto> list(HttpServletRequest request) {
         CurrentUser user = CurrentUserHolder.require(request);
         return organizationService.list(user.userId());
+    }
+
+    @GetMapping("/{courierServiceId}/cities")
+    public List<String> listCities(
+            HttpServletRequest request,
+            @PathVariable UUID courierServiceId) {
+        CurrentUser user = CurrentUserHolder.require(request);
+        return serviceCityService.listCities(user.userId(), courierServiceId);
     }
 
     @GetMapping("/{id}")

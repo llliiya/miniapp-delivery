@@ -1,6 +1,6 @@
 # Prod delivery-стек на выделенной машине.
 # Публичные порты: 80, 443. Запуск: deploy/deploy-delivery-full.sh
-# Перед деплоем: certbot для 85.239.58.129.sslip.io, правки секретов.
+# Env: miniapp-deploy/deploy/prod-stack.env (DELIVERY_TLS_DOMAIN, FRONTEND_DELIVERY_URL, токены MAX).
 
 name: delivery
 
@@ -37,22 +37,24 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/delivery
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: CHANGE_ME_strong_db_password
-      JWT_SECRET: CHANGE_ME_jwt_secret_min_32_chars
-      MINAPP_INTERNAL_MONOLITH_KEY: CHANGE_ME_internal_monolith_key
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_jwt_secret_min_32_chars}
+      MINAPP_INTERNAL_MONOLITH_KEY: ${MINAPP_INTERNAL_MONOLITH_KEY:-CHANGE_ME_internal_monolith_key}
       MINAPP_NOTIFICATION_BASE_URL: http://notification:8093
-      FRONTEND_URL: https://85.239.58.129.sslip.io
-      TG_TOKEN: ""
-      TG_USERNAME: ""
+      FRONTEND_URL: ${FRONTEND_URL:-${FRONTEND_DELIVERY_URL:-https://delivery.buzanov-vo.ru}}
+      TG_TOKEN: ${TG_TOKEN:-}
+      TG_USERNAME: ${TG_BOT_USERNAME:-}
       PLUSOFON_API_KEY: ""
       PLUSOFON_CLIENT_ID: ""
       PLUSOFON_DEV: "false"
-      BYPASS_VERIFICATION_CODES: "false"
-      SMTP_HOST: smtp.mail.ru
-      SMTP_PORT: "465"
-      SMTP_USERNAME: dobrovoz_rabota@mail.ru
-      SMTP_PASSWORD: B9ugJXTePoGetV9eESFS
-      SMTP_SSL_ENABLE: "true"
-      SMTP_STARTTLS_ENABLE: "false"
+      BYPASS_VERIFICATION_CODES: ${BYPASS_VERIFICATION_CODES:-false}
+      SMTP_HOST: ${SMTP_HOST:-smtp.mail.ru}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_SSL_ENABLE: ${SMTP_SSL_ENABLE:-true}
+      SMTP_STARTTLS_ENABLE: ${SMTP_STARTTLS_ENABLE:-false}
+      MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
+      DELIVERY_MAX_BOT_TOKEN: ${DELIVERY_MAX_BOT_TOKEN:-}
 
   notification:
     build:
@@ -82,17 +84,20 @@ services:
       DELIVERY_DB_URL: jdbc:postgresql://db:5432/delivery?currentSchema=delivery
       DELIVERY_DB_USERNAME: postgres
       DELIVERY_DB_PASSWORD: CHANGE_ME_strong_db_password
-      JWT_SECRET: CHANGE_ME_jwt_secret_min_32_chars
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_jwt_secret_min_32_chars}
       MINAPP_ACCOUNT_BASE_URL: http://account:8092
-      MINAPP_INTERNAL_MONOLITH_KEY: CHANGE_ME_internal_monolith_key
+      MINAPP_INTERNAL_MONOLITH_KEY: ${MINAPP_INTERNAL_MONOLITH_KEY:-CHANGE_ME_internal_monolith_key}
       MINAPP_NOTIFICATION_BASE_URL: http://notification:8093
-      FRONTEND_DELIVERY_URL: https://85.239.58.129.sslip.io
-      TG_TOKEN: ""
-      TG_BOT_USERNAME: ""
-      TG_BOT_MINI_APP_SHORT_NAME: ""
-      TG_ADMIN_CHAT_ID: ""
-      MAX_BOT_TOKEN: ""
-      MAX_BOT_USERNAME: ""
+      FRONTEND_DELIVERY_URL: ${FRONTEND_DELIVERY_URL:-https://delivery.buzanov-vo.ru}
+      DELIVERY_PUBLIC_API_URL: ${DELIVERY_PUBLIC_API_URL:-${FRONTEND_DELIVERY_URL:-https://delivery.buzanov-vo.ru}}
+      TG_TOKEN: ${TG_TOKEN:-}
+      TG_BOT_USERNAME: ${TG_BOT_USERNAME:-}
+      TG_BOT_MINI_APP_SHORT_NAME: ${TG_BOT_MINI_APP_SHORT_NAME:-}
+      TG_ADMIN_CHAT_ID: ${TG_ADMIN_CHAT_ID:-}
+      MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
+      DELIVERY_MAX_BOT_TOKEN: ${DELIVERY_MAX_BOT_TOKEN:-}
+      DELIVERY_MAX_BOT_USERNAME: ${DELIVERY_MAX_BOT_USERNAME:-}
+      MAX_BOT_USERNAME: ${MAX_BOT_USERNAME:-}
 
   gateway:
     build:
@@ -104,7 +109,7 @@ services:
       - notification
       - delivery-backend
     environment:
-      GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS: https://85.239.58.129.sslip.io
+      GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS: ${GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS:-${FRONTEND_DELIVERY_URL:-https://delivery.buzanov-vo.ru}}
       GATEWAY_URI_MINAPP_ACCOUNT: http://account:8092
       GATEWAY_URI_MINIAPP_NOTIFICATION: http://notification:8093
       GATEWAY_URI_DELIVERY_BACKEND: http://delivery-backend:9081
@@ -117,12 +122,12 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_ENV: production
-        VITE_API_BASE_URL: https://85.239.58.129.sslip.io
+        VITE_API_BASE_URL: ${DELIVERY_PUBLIC_API_URL:-${FRONTEND_DELIVERY_URL:-https://delivery.buzanov-vo.ru}}
         VITE_YANDEX_MAPS_API_KEY: ${VITE_YANDEX_MAPS_API_KEY:-}
         VITE_DGIS_API_KEY: ${VITE_DGIS_API_KEY:-}
     restart: unless-stopped
     environment:
-      DOMAIN: 85.239.58.129.sslip.io
+      DOMAIN: ${DELIVERY_TLS_DOMAIN:-delivery.buzanov-vo.ru}
       NGINX_ENVSUBST_FILTER: "^(DOMAIN)$$"
     ports:
       - "80:80"

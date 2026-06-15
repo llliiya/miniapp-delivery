@@ -94,7 +94,9 @@ public class TelegramKeyboardFactory {
     public List<List<LinkButton>> buildCourierAssignedDmLinkButtons(DeliveryOrder order) {
         List<List<LinkButton>> rows = new ArrayList<>();
         rows.add(List.of(new LinkButton(
-                OPEN_ORDER_BUTTON_LABEL, deepLinkService.maxMyOrderButtonUrl(order.getId()))));
+                OPEN_ORDER_BUTTON_LABEL,
+                deepLinkService.myOrderStartParam(order.getId()),
+                "open_app")));
 
         List<LinkButton> actionRow = new ArrayList<>();
         String telUri = PhoneDisplayFormatter.toTelUri(order.getCustomerPhone());
@@ -109,7 +111,15 @@ public class TelegramKeyboardFactory {
         return rows;
     }
 
-    public record LinkButton(String label, String url) {
+    public record LinkButton(String label, String url, String maxButtonType) {
+        public LinkButton(String label, String url) {
+            this(label, url, "link");
+        }
+
+        /** Для MAX {@code open_app}: {@code url} — fallback link; {@code startParam} — payload кнопки. */
+        public String startParam() {
+            return "open_app".equals(maxButtonType) ? url : "";
+        }
     }
 
     private InlineKeyboardButton buildMyOrderActionButton(UUID orderId, String label) {

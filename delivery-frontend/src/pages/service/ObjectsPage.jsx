@@ -4,11 +4,13 @@ import { listRestaurants } from '../../api/deliveryService.js'
 import ObjectEmptyState from '../../components/objects/ObjectEmptyState.jsx'
 import ObjectListCard from '../../components/objects/ObjectListCard.jsx'
 import ObjectRegistrationRequestsSection from '../../components/objects/ObjectRegistrationRequestsSection.jsx'
+import { useServiceCity } from '../../context/ServiceCityContext.jsx'
 import { useCourierServiceId } from '../../hooks/useActiveOrg.js'
 import { loadObjectStats } from '../../utils/loadObjectStats.js'
 
 export default function ObjectsPage() {
   const courierServiceId = useCourierServiceId()
+  const { cityQueryParam } = useServiceCity()
   const [objects, setObjects] = useState([])
   const [statsById, setStatsById] = useState({})
   const [loading, setLoading] = useState(true)
@@ -25,10 +27,11 @@ export default function ObjectsPage() {
       setLoading(true)
       setError('')
       try {
-        const data = await listRestaurants()
-        const list = (data || []).filter(
-          (o) => !courierServiceId || o.courierServiceId === courierServiceId,
-        )
+        const params = {}
+        if (courierServiceId) params.courierServiceId = courierServiceId
+        if (cityQueryParam) params.city = cityQueryParam
+        const data = await listRestaurants(params)
+        const list = data || []
         if (cancelled) return
         setObjects(list)
 
@@ -54,7 +57,7 @@ export default function ObjectsPage() {
     return () => {
       cancelled = true
     }
-  }, [courierServiceId, reloadKey])
+  }, [courierServiceId, cityQueryParam, reloadKey])
 
   return (
     <div className="objects-page">

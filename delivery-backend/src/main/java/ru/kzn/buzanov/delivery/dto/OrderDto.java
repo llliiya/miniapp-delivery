@@ -34,6 +34,7 @@ public record OrderDto(
         Long courierPublicId,
         String courierDisplayName,
         String restaurantName,
+        String restaurantCity,
         Long createdByUserId,
         UUID createdByOrganizationId,
         String createdBySource,

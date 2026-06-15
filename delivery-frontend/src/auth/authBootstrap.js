@@ -59,12 +59,18 @@ export async function tryMessengerAuth() {
 
 async function runMessengerLogin(ctx) {
   try {
+    console.info('[delivery auth] messenger/login request', {
+      platform: ctx.platform,
+      messengerUserId: ctx.messengerUserId,
+      initDataLen: ctx.initData?.length ?? 0,
+    })
     const data = await messengerLogin({
       platform: ctx.platform,
       messengerUserId: ctx.messengerUserId,
       initData: ctx.initData,
     })
     if (data?.needLink === true) {
+      console.info('[delivery auth] messenger/login needLink=true')
       setMessengerNeedLink()
       return false
     }
@@ -74,8 +80,12 @@ async function runMessengerLogin(ctx) {
       window.dispatchEvent(new Event('reauth'))
       return true
     }
+    console.warn('[delivery auth] messenger/login: no token in response', data)
   } catch (err) {
-    console.warn('[delivery auth] messenger login failed:', err?.message ?? err)
+    console.warn('[delivery auth] messenger/login failed:', {
+      message: err?.message ?? String(err),
+      status: err?.status,
+    })
   }
   return false
 }

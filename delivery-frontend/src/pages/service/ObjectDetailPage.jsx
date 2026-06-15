@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { listRestaurants, patchRestaurant } from '../../api/deliveryService.js'
+import { getRestaurant, listServiceCities, patchRestaurant } from '../../api/deliveryService.js'
 import { useCourierServiceId } from '../../hooks/useActiveOrg.js'
 import ObjectChannelsSection from '../../components/objects/ObjectChannelsSection.jsx'
 import { loadObjectStats } from '../../utils/loadObjectStats.js'
@@ -20,14 +20,18 @@ export default function ObjectDetailPage() {
   const [error, setError] = useState('')
   const [banner, setBanner] = useState(location.state?.createdMessage || '')
   const [deactivating, setDeactivating] = useState(false)
+  const [cityDraft, setCityDraft] = useState('')
+  const [cityOptions, setCityOptions] = useState([])
+  const [editingCity, setEditingCity] = useState(false)
+  const [savingCity, setSavingCity] = useState(false)
 
   const reload = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const restaurants = await listRestaurants()
-      const found = (restaurants || []).find((x) => x.id === restaurantId)
+      const found = await getRestaurant(restaurantId)
       setObject(found || null)
+      setCityDraft(found?.city || '')
       if (found) {
         setStats(await loadObjectStats(found.id, courierServiceId))
       } else {
@@ -45,9 +49,37 @@ export default function ObjectDetailPage() {
   }, [reload])
 
   useEffect(() => {
+    if (!courierServiceId) return
+    listServiceCities(courierServiceId)
+      .then((list) => setCityOptions(list || []))
+      .catch(() => setCityOptions([]))
+  }, [courierServiceId])
+
+  useEffect(() => {
     if (!location.state?.createdMessage) return
     window.history.replaceState({}, document.title)
   }, [location.state?.createdMessage])
+
+  const onSaveCity = async () => {
+    const trimmed = cityDraft.trim()
+    if (!trimmed) {
+      setBanner('Укажите город')
+      return
+    }
+    setSavingCity(true)
+    setBanner('')
+    try {
+      const updated = await patchRestaurant(restaurantId, { city: trimmed })
+      setObject(updated)
+      setCityDraft(updated.city || trimmed)
+      setEditingCity(false)
+      setBanner('Город обновлён')
+    } catch (e) {
+      setBanner(e?.message || 'Не удалось сохранить город')
+    } finally {
+      setSavingCity(false)
+    }
+  }
 
   const onDeactivateObject = async () => {
     const confirmed = window.confirm(
@@ -139,6 +171,56 @@ export default function ObjectDetailPage() {
           <div className="objects-detail-kv__row">
             <dt>ID объекта</dt>
             <dd>{object.publicId ?? '—'}</dd>
+          </div>
+          <div className="objects-detail-kv__row">
+            <dt>Город</dt>
+            <dd>
+              {editingCity ? (
+                <div className="objects-detail-city-edit">
+                  <input
+                    className="input"
+                    value={cityDraft}
+                    onChange={(e) => setCityDraft(e.target.value)}
+                    list="object-detail-city-options"
+                  />
+                  <datalist id="object-detail-city-options">
+                    {cityOptions.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    disabled={savingCity}
+                    onClick={onSaveCity}
+                  >
+                    {savingCity ? 'Сохранение…' : 'Сохранить'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    disabled={savingCity}
+                    onClick={() => {
+                      setEditingCity(false)
+                      setCityDraft(object.city || '')
+                    }}
+                  >
+                    Отмена
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {object.city || '—'}
+                  <button
+                    type="button"
+                    className="btn btn-secondary objects-detail-city-edit-btn"
+                    onClick={() => setEditingCity(true)}
+                  >
+                    Изменить
+                  </button>
+                </>
+              )}
+            </dd>
           </div>
           <div className="objects-detail-kv__row">
             <dt>Статус</dt>

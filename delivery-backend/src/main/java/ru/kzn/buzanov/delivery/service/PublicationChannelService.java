@@ -12,6 +12,7 @@ import ru.kzn.buzanov.delivery.dto.PublicationChannelDto;
 import ru.kzn.buzanov.delivery.dto.request.CreatePublicationChannelRequest;
 import ru.kzn.buzanov.delivery.dto.request.PatchPublicationChannelRequest;
 import ru.kzn.buzanov.delivery.repository.PublicationChannelRepository;
+import ru.kzn.buzanov.delivery.util.CityNormalizer;
 
 import java.time.Instant;
 import java.util.List;
@@ -25,9 +26,11 @@ public class PublicationChannelService {
     private final AccessControlService accessControl;
 
     @Transactional(readOnly = true)
-    public List<PublicationChannelDto> list(Long userId, UUID courierServiceId) {
+    public List<PublicationChannelDto> list(Long userId, UUID courierServiceId, String city) {
         accessControl.requireCanManagePublicationChannels(userId, courierServiceId);
+        String cityFilter = CityNormalizer.normalize(city);
         return channelRepository.findByCourierServiceIdOrderByCreatedAtDesc(courierServiceId).stream()
+                .filter(channel -> cityFilter == null || CityNormalizer.equals(channel.getCity(), cityFilter))
                 .map(this::toDto)
                 .toList();
     }
@@ -46,7 +49,7 @@ public class PublicationChannelService {
         channel.setChatType(request.chatType());
         channel.setName(request.name().trim());
         channel.setExternalId(request.externalId().trim());
-        channel.setCity(request.city() != null ? request.city().trim() : null);
+        channel.setCity(CityNormalizer.normalize(request.city()));
         channel.setActive(request.isActive() == null || request.isActive());
         channel.setCreatedAt(now);
         channel.setUpdatedAt(now);
@@ -67,7 +70,7 @@ public class PublicationChannelService {
             channel.setExternalId(request.externalId().trim());
         }
         if (request.city() != null) {
-            channel.setCity(request.city().isBlank() ? null : request.city().trim());
+            channel.setCity(CityNormalizer.normalize(request.city()));
         }
         if (request.chatType() != null) {
             validateChatType(request.chatType());

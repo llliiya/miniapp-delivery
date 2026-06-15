@@ -53,3 +53,6 @@ databaseChangeLog:
   - include:
       file: changes/018-partner-program-expansion.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/019-organization-city.yaml
+      relativeToChangelogFile: true
