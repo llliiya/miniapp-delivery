@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   addCourier,
   approveCourierRequest,
@@ -57,6 +58,7 @@ export default function ServiceCouriersPage() {
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [conflictCourierId, setConflictCourierId] = useState(null)
   const [statusUpdatingId, setStatusUpdatingId] = useState(null)
   const [credentials, setCredentials] = useState(null)
   const [credentialsTitle, setCredentialsTitle] = useState('Курьер создан')
@@ -111,6 +113,7 @@ export default function ServiceCouriersPage() {
     e.preventDefault()
     setMessage('')
     setMessageOk(false)
+    setConflictCourierId(null)
     const trimmedName = fullName.trim()
     const trimmedPhone = phone.trim()
     const trimmedEmail = email.trim()
@@ -141,6 +144,12 @@ export default function ServiceCouriersPage() {
     } catch (err) {
       setMessageOk(false)
       setMessage(mapDeliveryApiError(err, 'Не удалось добавить курьера'))
+      const existingId = err?.existingCourierId || err?.existingCourier?.memberId
+      if (err?.error === 'courier_already_in_service' && existingId) {
+        setConflictCourierId(existingId)
+      } else {
+        setConflictCourierId(null)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -212,6 +221,7 @@ export default function ServiceCouriersPage() {
     setStatusUpdatingId(courier.memberId)
     setMessage('')
     setMessageOk(false)
+    setConflictCourierId(null)
     try {
       await patchCourier(courier.memberId, { status: nextStatus })
       setMessageOk(true)
@@ -311,7 +321,12 @@ export default function ServiceCouriersPage() {
           style={{ color: messageOk ? '#047857' : '#b91c1c', marginTop: 0 }}
           role="status"
         >
-          {message}
+          <p style={{ margin: conflictCourierId ? '0 0 12px' : 0 }}>{message}</p>
+          {conflictCourierId && (
+            <Link to={`/service/couriers/${conflictCourierId}`} className="btn btn-secondary">
+              Открыть карточку курьера
+            </Link>
+          )}
         </div>
       )}
 
@@ -391,9 +406,23 @@ export default function ServiceCouriersPage() {
             className={`card${c.status === 'blocked' ? ' card-inactive' : ''}`}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-              <strong>{c.displayName || `Курьер ${c.publicId ?? ''}`}</strong>
+              <strong>
+                <Link to={`/service/couriers/${c.memberId}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {c.displayName || `Курьер ${c.publicId ?? ''}`}
+                </Link>
+              </strong>
               <span className={statusBadgeClass(c.status)}>{statusLabel(c.status)}</span>
             </div>
+            {c.email && (
+              <p className="muted" style={{ margin: '8px 0 4px' }}>
+                Email: {c.email}
+              </p>
+            )}
+            {c.phone && (
+              <p className="muted" style={{ margin: '4px 0' }}>
+                Телефон: {c.phone}
+              </p>
+            )}
             <p className="muted" style={{ margin: '8px 0 4px' }}>
               ID курьера: {c.publicId ?? '—'}
             </p>
@@ -410,6 +439,9 @@ export default function ServiceCouriersPage() {
               Добавлен: {formatDate(c.createdAt)}
             </p>
             <div className="form-actions">
+              <Link to={`/service/couriers/${c.memberId}`} className="btn btn-secondary">
+                Карточка
+              </Link>
               <button
                 type="button"
                 className="btn btn-secondary"

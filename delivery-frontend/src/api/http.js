@@ -8,9 +8,9 @@ async function parseJson(res) {
 
 function friendlyApiErrorMessage(status, data, fallback = 'Не удалось выполнить действие') {
   const fromApi =
-    (typeof data?.error === 'string' && data.error.trim()) ||
-    (typeof data?.detail === 'string' && data.detail.trim()) ||
     (typeof data?.message === 'string' && data.message.trim()) ||
+    (typeof data?.detail === 'string' && data.detail.trim()) ||
+    (typeof data?.error === 'string' && data.error.trim()) ||
     ''
   if (fromApi && !/^HTTP\s\d+/i.test(fromApi)) {
     return fromApi
@@ -58,6 +58,9 @@ export async function accountApi(path, method = 'GET', body) {
     const err = new Error(message)
     err.status = res.status
     err.error = data?.error
+    err.conflictField = data?.conflictField
+    err.existingCourier = data?.existingCourier
+    err.existingCourierId = data?.existingCourierId
     throw err
   }
   return parseJson(res)
@@ -77,6 +80,9 @@ export async function deliveryApi(path, method = 'GET', body) {
     const err = new Error(message)
     err.status = res.status
     err.error = data?.error
+    err.conflictField = data?.conflictField
+    err.existingCourier = data?.existingCourier
+    err.existingCourierId = data?.existingCourierId
     throw err
   }
   return parseJson(res)

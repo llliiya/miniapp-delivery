@@ -1,29 +1,47 @@
 package ru.kzn.buzanov.delivery.bot;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.SendMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.kzn.buzanov.delivery.service.order.MessengerAssignOutcome;
+import ru.kzn.buzanov.delivery.service.order.MessengerAssignResult;
+import ru.kzn.buzanov.delivery.service.order.OrderAssignFromMessengerService;
+
+import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
 public class DeliveryTelegramUpdateService {
 
     static final String GET_CHAT_ID_COMMAND = "/get_chat_id";
+    private static final String PROVIDER_TELEGRAM = "TELEGRAM";
 
     private final TelegramBot telegramBot;
+    private final OrderAssignFromMessengerService assignFromMessengerService;
 
-    public DeliveryTelegramUpdateService(@Autowired(required = false) TelegramBot telegramBot) {
+    public DeliveryTelegramUpdateService(
+            @Autowired(required = false) TelegramBot telegramBot,
+            OrderAssignFromMessengerService assignFromMessengerService) {
         this.telegramBot = telegramBot;
+        this.assignFromMessengerService = assignFromMessengerService;
     }
 
     public void handleUpdate(Update update) {
         if (telegramBot == null || update == null) {
+            return;
+        }
+        if (update.callbackQuery() != null) {
+            handleCallbackQuery(update.callbackQuery());
             return;
         }
         Message primary = primaryMessage(update);
@@ -43,6 +61,48 @@ public class DeliveryTelegramUpdateService {
                 primary.chat().id(),
                 primary.chat().title());
         handleGetChatId(primary);
+    }
+
+    private void handleCallbackQuery(CallbackQuery callbackQuery) {
+        String data = callbackQuery.data();
+        if (!OrderAssignFromMessengerService.isAssignOrderCallback(data)) {
+            return;
+        }
+        Optional<UUID> orderIdOpt = OrderAssignFromMessengerService.parseOrderIdFromCallback(data);
+        if (orderIdOpt.isEmpty()) {
+            answerCallback(callbackQuery.id(), "Некорректный заказ", true);
+            return;
+        }
+        User from = callbackQuery.from();
+        if (from == null) {
+            answerCallback(callbackQuery.id(), "Не удалось определить пользователя", true);
+            return;
+        }
+        log.info(
+                "Delivery bot: assign_order callback orderId={} telegramUserId={}",
+                orderIdOpt.get(),
+                from.id());
+        MessengerAssignResult result = assignFromMessengerService.tryAssign(
+                PROVIDER_TELEGRAM, String.valueOf(from.id()), orderIdOpt.get());
+        boolean showAlert = result.outcome() != MessengerAssignOutcome.ASSIGNED;
+        answerCallback(callbackQuery.id(), result.userMessage(), showAlert);
+    }
+
+    private void answerCallback(String callbackQueryId, String text, boolean showAlert) {
+        if (callbackQueryId == null || callbackQueryId.isBlank()) {
+            return;
+        }
+        var request = new AnswerCallbackQuery(callbackQueryId);
+        if (text != null && !text.isBlank()) {
+            request = request.text(text);
+        }
+        if (showAlert) {
+            request = request.showAlert(true);
+        }
+        var response = telegramBot.execute(request);
+        if (!response.isOk()) {
+            log.warn("Delivery bot: answerCallbackQuery failed: {}", response.description());
+        }
     }
 
     static Message primaryMessage(Update update) {

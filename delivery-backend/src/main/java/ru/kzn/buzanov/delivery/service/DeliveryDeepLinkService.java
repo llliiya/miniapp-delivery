@@ -24,6 +24,10 @@ public class DeliveryDeepLinkService {
         return "delivery_order_" + orderId;
     }
 
+    public String assignOrderStartParam(UUID orderId) {
+        return "delivery_assign_order_" + orderId;
+    }
+
     public String courierMyOrdersWebUrl() {
         String base = trimTrailingSlash(properties.getFrontendUrl());
         return base + "/courier/my-orders";
@@ -124,6 +128,31 @@ public class DeliveryDeepLinkService {
         return maxOpenAppTarget(orderStartParam(orderId));
     }
 
+    public MaxOpenAppTarget maxAssignOrderOpenAppTarget(UUID orderId) {
+        return maxOpenAppTarget(assignOrderStartParam(orderId));
+    }
+
+    public String telegramAssignOrderMiniAppUrl(UUID orderId) {
+        String username = normalizeBotUsername(properties.getTelegram().getBotUsername());
+        if (username.isEmpty()) {
+            return webUrlWithAssignStartParam(orderId);
+        }
+        String startParam = assignOrderStartParam(orderId);
+        String shortName = normalizeMiniAppShortName(properties.getTelegram().getMiniAppShortName());
+        if (!shortName.isEmpty()) {
+            return "https://t.me/" + username + "/" + shortName + "?startapp=" + startParam;
+        }
+        return "https://t.me/" + username + "?startapp=" + startParam;
+    }
+
+    public String telegramAssignOrderWebAppButtonUrl(UUID orderId) {
+        String base = trimTrailingSlash(properties.getFrontendUrl());
+        if (base.isEmpty()) {
+            return courierOrderWebUrl(orderId);
+        }
+        return base + "?start_param=" + encodeQuery(assignOrderStartParam(orderId));
+    }
+
     public MaxOpenAppTarget maxMyOrderOpenAppTarget(UUID orderId) {
         return maxOpenAppTarget(myOrderStartParam(orderId));
     }
@@ -181,6 +210,14 @@ public class DeliveryDeepLinkService {
             return courierOrderWebUrl(orderId);
         }
         return base + "?start_param=" + encodeQuery(orderStartParam(orderId));
+    }
+
+    public String webUrlWithAssignStartParam(UUID orderId) {
+        String base = trimTrailingSlash(properties.getFrontendUrl());
+        if (base.isEmpty()) {
+            return courierOrderWebUrl(orderId);
+        }
+        return base + "?start_param=" + encodeQuery(assignOrderStartParam(orderId));
     }
 
     private static String normalizeBotUsername(String username) {

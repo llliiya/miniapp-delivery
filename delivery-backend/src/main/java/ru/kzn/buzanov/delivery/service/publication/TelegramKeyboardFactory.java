@@ -9,6 +9,7 @@ import ru.kzn.buzanov.delivery.config.DeliveryBotProperties;
 import ru.kzn.buzanov.delivery.domain.ChatType;
 import ru.kzn.buzanov.delivery.domain.DeliveryOrder;
 import ru.kzn.buzanov.delivery.service.DeliveryDeepLinkService;
+import ru.kzn.buzanov.delivery.service.order.OrderAssignFromMessengerService;
 import ru.kzn.buzanov.delivery.util.NavigatorUrlBuilder;
 import ru.kzn.buzanov.delivery.util.PhoneDisplayFormatter;
 
@@ -22,7 +23,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TelegramKeyboardFactory {
 
-    private static final String ORDER_BUTTON_LABEL = "🚚 Взять заказ";
+    private static final String VIEW_ORDER_BUTTON_LABEL = "👀 Посмотреть заказ";
+    private static final String ASSIGN_ORDER_BUTTON_LABEL = "🚚 Взять заказ";
     private static final String OPEN_ORDER_BUTTON_LABEL = "📦 Открыть заказ";
     private static final String CALL_CLIENT_BUTTON_LABEL = "📞 Позвонить клиенту";
     private static final String NAVIGATOR_BUTTON_LABEL = "🗺 Навигатор";
@@ -33,28 +35,48 @@ public class TelegramKeyboardFactory {
     private final DeliveryBotProperties properties;
 
     /**
+     * Клавиатура для свободного заказа: просмотр (mini app) + взятие (callback).
+     */
+    public InlineKeyboardButton[][] buildWaitingForCourierKeyboard(UUID orderId, ChatType chatType, long chatId) {
+        return new InlineKeyboardButton[][] {
+            {
+                buildOrderViewButton(orderId, chatType, chatId),
+                buildOrderAssignCallbackButton(orderId),
+            }
+        };
+    }
+
+    /**
+     * @deprecated используйте {@link #buildOrderViewButton(UUID, ChatType, long)}
+     */
+    @Deprecated
+    public InlineKeyboardButton buildOrderOpenButton(UUID orderId, ChatType chatType, long chatId) {
+        return buildOrderViewButton(orderId, chatType, chatId);
+    }
+
+    /**
      * В каналах Telegram inline-кнопка web_app не поддерживается (BUTTON_TYPE_INVALID).
      * Для channel — url (t.me/?startapp=), для group — web_app.
      */
-    public InlineKeyboardButton buildOrderOpenButton(UUID orderId, ChatType chatType, long chatId) {
+    public InlineKeyboardButton buildOrderViewButton(UUID orderId, ChatType chatType, long chatId) {
         String botUsername = normalizeBotUsername(properties.getTelegram().getBotUsername());
         String registeredMiniAppUrl = trimTrailingSlash(properties.getFrontendUrl());
 
         if (chatType == ChatType.channel) {
             String miniAppUrl = deepLinkService.telegramMiniAppUrl(orderId);
             log.info(
-                    "Telegram order button: miniAppUrl={} botUsername={} chatId={} buttonType={} chatType={}",
+                    "Telegram view order button: miniAppUrl={} botUsername={} chatId={} buttonType={} chatType={}",
                     miniAppUrl,
                     botUsername.isEmpty() ? "(not configured)" : botUsername,
                     chatId,
                     BUTTON_TYPE_URL,
                     chatType);
-            return new InlineKeyboardButton(ORDER_BUTTON_LABEL).url(miniAppUrl);
+            return new InlineKeyboardButton(VIEW_ORDER_BUTTON_LABEL).url(miniAppUrl);
         }
 
         String miniAppUrl = deepLinkService.telegramOrderWebAppButtonUrl(orderId);
         log.info(
-                "Telegram order button: miniAppUrl={} botUsername={} chatId={} buttonType={} chatType={}",
+                "Telegram view order button: miniAppUrl={} botUsername={} chatId={} buttonType={} chatType={}",
                 miniAppUrl,
                 botUsername.isEmpty() ? "(not configured)" : botUsername,
                 chatId,
@@ -63,7 +85,7 @@ public class TelegramKeyboardFactory {
 
         if (!registeredMiniAppUrl.isEmpty() && !miniAppUrlMatchesRegistered(registeredMiniAppUrl, miniAppUrl)) {
             log.warn(
-                    "Telegram order button: miniAppUrl base does not match BotFather Web App URL. "
+                    "Telegram view order button: miniAppUrl base does not match BotFather Web App URL. "
                             + "registeredMiniAppUrl={} miniAppUrl={} "
                             + "Check BotFather → Menu Button / Web App URL for bot @{}",
                     registeredMiniAppUrl,
@@ -71,7 +93,13 @@ public class TelegramKeyboardFactory {
                     botUsername.isEmpty() ? "?" : botUsername);
         }
 
-        return new InlineKeyboardButton(ORDER_BUTTON_LABEL).webApp(new WebAppInfo(miniAppUrl));
+        return new InlineKeyboardButton(VIEW_ORDER_BUTTON_LABEL).webApp(new WebAppInfo(miniAppUrl));
+    }
+
+    public InlineKeyboardButton buildOrderAssignCallbackButton(UUID orderId) {
+        String callbackData = OrderAssignFromMessengerService.CALLBACK_PREFIX + orderId;
+        log.info("Telegram assign order button: orderId={} callbackData={}", orderId, callbackData);
+        return new InlineKeyboardButton(ASSIGN_ORDER_BUTTON_LABEL).callbackData(callbackData);
     }
 
     public InlineKeyboardButton[][] buildCourierAssignedDmKeyboard(DeliveryOrder order) {

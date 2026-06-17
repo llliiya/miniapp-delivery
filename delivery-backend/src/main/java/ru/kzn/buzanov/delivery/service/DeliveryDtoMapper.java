@@ -66,7 +66,8 @@ public class DeliveryDtoMapper {
                 member.getStatus(),
                 profile.getBalance(),
                 profile.getCompletedOrdersCount(),
-                member.getCreatedAt()
-        );
+                member.getCreatedAt(),
+                null,
+                null);
     }
 }

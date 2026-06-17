@@ -46,6 +46,25 @@ class MaxChannelPublisherTest {
     }
 
     @Test
+    void buildWaitingForCourierMessageBody_usesTwoOpenAppButtons() {
+        when(deepLinkService.maxOrderOpenAppTarget(java.util.UUID.fromString("427effcf-8248-42fa-a836-9faa7eb5ce09")))
+                .thenReturn(new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_order_x"));
+        when(deepLinkService.maxAssignOrderOpenAppTarget(java.util.UUID.fromString("427effcf-8248-42fa-a836-9faa7eb5ce09")))
+                .thenReturn(new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_assign_order_x"));
+
+        var body = publisher.buildWaitingForCourierMessageBody(
+                "order text",
+                new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_order_x"),
+                new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_assign_order_x"));
+
+        var row = body.get("attachments").get(0).get("payload").get("buttons").get(0);
+        assertThat(row).hasSize(2);
+        assertThat(row.get(0).get("type").asText()).isEqualTo("open_app");
+        assertThat(row.get(0).get("payload").asText()).isEqualTo("delivery_order_x");
+        assertThat(row.get(1).get("payload").asText()).isEqualTo("delivery_assign_order_x");
+    }
+
+    @Test
     void buildOpenAppMessageBody_usesWebAppAndPayloadFields() {
         when(deepLinkService.maxOrderOpenAppTarget(java.util.UUID.fromString("427effcf-8248-42fa-a836-9faa7eb5ce09")))
                 .thenReturn(new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_order_x"));

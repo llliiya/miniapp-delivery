@@ -7,6 +7,7 @@ import ru.kzn.buzanov.delivery.config.DeliveryBotProperties;
 import ru.kzn.buzanov.delivery.domain.ChatType;
 import ru.kzn.buzanov.delivery.domain.DeliveryOrder;
 import ru.kzn.buzanov.delivery.service.DeliveryDeepLinkService;
+import ru.kzn.buzanov.delivery.service.order.OrderAssignFromMessengerService;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -31,24 +32,29 @@ class TelegramKeyboardFactoryTest {
     }
 
     @Test
-    void buildOrderOpenButton_group_usesWebAppWithStartParam() {
-        InlineKeyboardButton button = factory.buildOrderOpenButton(ORDER_ID, ChatType.group, -1001234567890L);
+    void buildWaitingForCourierKeyboard_group_hasViewWebAppAndAssignCallback() {
+        InlineKeyboardButton[][] rows = factory.buildWaitingForCourierKeyboard(ORDER_ID, ChatType.group, -1001234567890L);
 
-        assertThat(button.text()).isEqualTo("🚚 Взять заказ");
-        assertThat(button.url()).isNull();
-        assertThat(button.webApp()).isNotNull();
-        assertThat(button.webApp().url())
+        assertThat(rows.length).isEqualTo(1);
+        assertThat(rows[0]).hasSize(2);
+        assertThat(rows[0][0].text()).isEqualTo("👀 Посмотреть заказ");
+        assertThat(rows[0][0].webApp()).isNotNull();
+        assertThat(rows[0][0].webApp().url())
                 .isEqualTo("https://example.com?start_param=delivery_order_11111111-1111-1111-1111-111111111111");
+        assertThat(rows[0][1].text()).isEqualTo("🚚 Взять заказ");
+        assertThat(rows[0][1].callbackData())
+                .isEqualTo(OrderAssignFromMessengerService.CALLBACK_PREFIX + ORDER_ID);
     }
 
     @Test
-    void buildOrderOpenButton_channel_usesTmeStartAppUrl() {
-        InlineKeyboardButton button = factory.buildOrderOpenButton(ORDER_ID, ChatType.channel, -1001234567890L);
+    void buildWaitingForCourierKeyboard_channel_hasViewUrlAndAssignCallback() {
+        InlineKeyboardButton[][] rows = factory.buildWaitingForCourierKeyboard(ORDER_ID, ChatType.channel, -1001234567890L);
 
-        assertThat(button.text()).isEqualTo("🚚 Взять заказ");
-        assertThat(button.webApp()).isNull();
-        assertThat(button.url())
+        assertThat(rows[0][0].text()).isEqualTo("👀 Посмотреть заказ");
+        assertThat(rows[0][0].url())
                 .isEqualTo("https://t.me/dobrovoz_test_bot?startapp=delivery_order_11111111-1111-1111-1111-111111111111");
+        assertThat(rows[0][1].callbackData())
+                .isEqualTo(OrderAssignFromMessengerService.CALLBACK_PREFIX + ORDER_ID);
     }
 
     @Test

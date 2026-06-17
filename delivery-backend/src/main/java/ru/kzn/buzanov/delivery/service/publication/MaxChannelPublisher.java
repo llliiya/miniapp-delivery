@@ -22,6 +22,9 @@ import ru.kzn.buzanov.delivery.service.DeliveryDeepLinkService;
 @RequiredArgsConstructor
 public class MaxChannelPublisher {
 
+    private static final String VIEW_ORDER_BUTTON_LABEL = "👀 Посмотреть заказ";
+    private static final String ASSIGN_ORDER_BUTTON_LABEL = "🚚 Взять заказ";
+
     private final DeliveryBotProperties properties;
     private final DeliveryDeepLinkService deepLinkService;
     private final OrderMessageFormatter messageFormatter;
@@ -36,13 +39,14 @@ public class MaxChannelPublisher {
         try {
             String text = messageFormatter.formatOrderCardPlain(order, null);
             if (order.getStatus() == OrderStatus.waiting_for_courier && order.getCourierUserId() == null) {
-                DeliveryDeepLinkService.MaxOpenAppTarget target = deepLinkService.maxOrderOpenAppTarget(order.getId());
+                DeliveryDeepLinkService.MaxOpenAppTarget viewTarget = deepLinkService.maxOrderOpenAppTarget(order.getId());
+                DeliveryDeepLinkService.MaxOpenAppTarget assignTarget =
+                        deepLinkService.maxAssignOrderOpenAppTarget(order.getId());
                 log.info(
-                        "MAX order button: type=open_app orderId={} web_app={} payload={}",
-                        order.getId(),
-                        target.webApp(),
-                        target.payload());
-                ObjectNode body = buildOpenAppMessageBody(text, target, "🚚 Взять заказ");
+                        "MAX order buttons: view payload={} assign payload={}",
+                        viewTarget.payload(),
+                        assignTarget.payload());
+                ObjectNode body = buildWaitingForCourierMessageBody(text, viewTarget, assignTarget);
                 ChannelPublishResult result = send(channel.getExternalId(), token, body, order.getPublicNumber());
                 if (!result.success() && MaxOpenAppButtons.isWebAppNullError(result.errorMessage())) {
                     String linkUrl = deepLinkService.maxButtonUrl(order.getId());
@@ -50,7 +54,7 @@ public class MaxChannelPublisher {
                             "MAX open_app rejected for order #{}; fallback to link url={}",
                             order.getPublicNumber(),
                             linkUrl);
-                    body = buildLinkMessageBody(text, linkUrl, "🚚 Взять заказ");
+                    body = buildLinkMessageBody(text, linkUrl, VIEW_ORDER_BUTTON_LABEL);
                     return send(channel.getExternalId(), token, body, order.getPublicNumber());
                 }
                 return result;
@@ -76,17 +80,18 @@ public class MaxChannelPublisher {
         }
         try {
             String text = messageFormatter.formatOrderCardPlain(order, courierName);
-            DeliveryDeepLinkService.MaxOpenAppTarget target = null;
+            DeliveryDeepLinkService.MaxOpenAppTarget viewTarget = null;
+            DeliveryDeepLinkService.MaxOpenAppTarget assignTarget = null;
             if (order.getStatus() == OrderStatus.waiting_for_courier && order.getCourierUserId() == null) {
-                target = deepLinkService.maxOrderOpenAppTarget(order.getId());
+                viewTarget = deepLinkService.maxOrderOpenAppTarget(order.getId());
+                assignTarget = deepLinkService.maxAssignOrderOpenAppTarget(order.getId());
                 log.info(
-                        "MAX order button edit: type=open_app orderId={} web_app={} payload={}",
-                        order.getId(),
-                        target.webApp(),
-                        target.payload());
+                        "MAX order buttons edit: view payload={} assign payload={}",
+                        viewTarget.payload(),
+                        assignTarget.payload());
             }
-            ObjectNode body = target != null
-                    ? buildOpenAppMessageBody(text, target, "🚚 Взять заказ")
+            ObjectNode body = viewTarget != null && assignTarget != null
+                    ? buildWaitingForCourierMessageBody(text, viewTarget, assignTarget)
                     : buildMessageBody(text, null);
             String resolvedChatId = chatId != null ? chatId : channel.getExternalId();
             log.info(
@@ -96,7 +101,7 @@ public class MaxChannelPublisher {
                     resolvedChatId,
                     messageId.trim(),
                     order.getStatus(),
-                    target != null);
+                    viewTarget != null);
             String responseBody = putMessage(token, messageId.trim(), body);
             return parseEditResult(responseBody, order.getPublicNumber());
         } catch (RestClientResponseException e) {
@@ -170,6 +175,25 @@ public class MaxChannelPublisher {
             log.warn("MAX editMessage order #{}: could not parse response: {}", publicNumber, abbreviate(responseBody));
         }
         return ChannelEditResult.ok();
+    }
+
+    ObjectNode buildWaitingForCourierMessageBody(
+            String text,
+            DeliveryDeepLinkService.MaxOpenAppTarget viewTarget,
+            DeliveryDeepLinkService.MaxOpenAppTarget assignTarget) {
+        ObjectNode viewBtn = maxOpenAppButtons.openAppButton(VIEW_ORDER_BUTTON_LABEL, viewTarget);
+        ObjectNode assignBtn = maxOpenAppButtons.openAppButton(ASSIGN_ORDER_BUTTON_LABEL, assignTarget);
+        ArrayNode row = objectMapper.createArrayNode().add(viewBtn).add(assignBtn);
+        ArrayNode rows = objectMapper.createArrayNode().add(row);
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.set("buttons", rows);
+        ObjectNode attachment = objectMapper.createObjectNode();
+        attachment.put("type", "inline_keyboard");
+        attachment.set("payload", payload);
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("text", text);
+        root.set("attachments", objectMapper.createArrayNode().add(attachment));
+        return root;
     }
 
     ObjectNode buildOpenAppMessageBody(String text, DeliveryDeepLinkService.MaxOpenAppTarget target, String buttonLabel) {

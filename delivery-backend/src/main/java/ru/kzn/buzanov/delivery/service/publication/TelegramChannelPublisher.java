@@ -107,9 +107,9 @@ public class TelegramChannelPublisher {
 
     private InlineKeyboardMarkup buildOrderKeyboard(PublicationChannel channel, DeliveryOrder order, long chatId) {
         if (order.getStatus() == OrderStatus.waiting_for_courier && order.getCourierUserId() == null) {
-            InlineKeyboardButton button = keyboardFactory.buildOrderOpenButton(
+            InlineKeyboardButton[][] rows = keyboardFactory.buildWaitingForCourierKeyboard(
                     order.getId(), channel.getChatType(), chatId);
-            return new InlineKeyboardMarkup(button);
+            return new InlineKeyboardMarkup(rows);
         }
         return new InlineKeyboardMarkup();
     }

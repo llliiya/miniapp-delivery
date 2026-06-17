@@ -7,6 +7,7 @@ import ServiceOrderDetailPage from '../pages/service/ServiceOrderDetailPage.jsx'
 import ServiceProfilePage from '../pages/service/ServiceProfilePage.jsx'
 import ServiceAdminPage from '../pages/service/ServiceAdminPage.jsx'
 import ServiceCouriersPage from '../pages/service/ServiceCouriersPage.jsx'
+import ServiceCourierDetailPage from '../pages/service/ServiceCourierDetailPage.jsx'
 import ChannelsPage from '../pages/service/ChannelsPage.jsx'
 import ObjectsPage from '../pages/service/ObjectsPage.jsx'
 import AddObjectPage from '../pages/service/AddObjectPage.jsx'
@@ -41,6 +42,7 @@ export default function ServiceRoutes() {
         <Route path="restaurants/:restaurantId/channels" element={<ObjectChannelsPage />} />
         <Route path="restaurants/:restaurantId/pickup" element={<PickupPointsPage />} />
         <Route path="couriers" element={<ServiceCouriersPage />} />
+        <Route path="couriers/:courierId" element={<ServiceCourierDetailPage />} />
         <Route path="registration-requests" element={<Navigate to="/service/restaurants" replace />} />
         <Route path="channels" element={<ChannelsPage />} />
         <Route path="profile" element={<ServiceProfilePage />} />

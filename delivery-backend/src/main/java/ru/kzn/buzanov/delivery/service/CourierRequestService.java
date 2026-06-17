@@ -45,6 +45,7 @@ public class CourierRequestService {
     private final AccessControlService accessControl;
     private final CourierRequestNotificationService notificationService;
     private final PartnerCodeService partnerCodeService;
+    private final CourierMembershipChecks courierMembershipChecks;
 
     @Transactional(readOnly = true)
     public MessengerRegistrationStatusDto messengerStatus(String provider, String externalId) {
@@ -176,7 +177,7 @@ public class CourierRequestService {
                     request.getMessengerProvider(), request.getMessengerExternalId());
             if (existingUserId.isPresent()) {
                 courierUserId = existingUserId.get();
-                assertNotAlreadyCourier(courierServiceId, courierUserId);
+                courierMembershipChecks.ensureCanAddCourier(courierServiceId, courierUserId);
                 try {
                     accountUserClient.linkMessengerIdentity(
                             courierUserId,
@@ -201,6 +202,8 @@ public class CourierRequestService {
                     request.getFullName(), request.getPhone(), requestEmail);
             courierUserId = provisioned.userId();
         }
+
+        courierMembershipChecks.ensureCanAddCourier(courierServiceId, courierUserId);
 
         var member = memberService.addMembershipForOrganization(
                 courierServiceId,
@@ -240,15 +243,6 @@ public class CourierRequestService {
         request.setStatus(CourierRequestStatus.REJECTED);
         request.setUpdatedAt(Instant.now());
         return toDto(requestRepository.save(request));
-    }
-
-    private void assertNotAlreadyCourier(UUID courierServiceId, Long userId) {
-        memberRepository.findByOrganizationIdAndUserId(courierServiceId, userId).ifPresent(member -> {
-            if (member.getRole() == MemberRole.courier) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Курьер уже добавлен в службу");
-            }
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Пользователь уже участник с другой ролью");
-        });
     }
 
     private AccountProvisionResult provisionCourierAccount(String fullName, String phone, String email) {

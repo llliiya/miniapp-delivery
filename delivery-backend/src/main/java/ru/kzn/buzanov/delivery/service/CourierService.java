@@ -1,13 +1,13 @@
 package ru.kzn.buzanov.delivery.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import ru.kzn.buzanov.delivery.domain.CourierProfile;
+import ru.kzn.buzanov.delivery.api.CourierConflictException;
 import ru.kzn.buzanov.delivery.domain.MemberRole;
-import ru.kzn.buzanov.delivery.domain.MemberStatus;
 import ru.kzn.buzanov.delivery.domain.OrganizationMember;
 import ru.kzn.buzanov.delivery.dto.CreateCourierResponse;
 import ru.kzn.buzanov.delivery.dto.CourierDto;
@@ -19,31 +19,29 @@ import ru.kzn.buzanov.delivery.integration.AccountUserClient;
 import ru.kzn.buzanov.delivery.integration.account.AccountProvisionRequest;
 import ru.kzn.buzanov.delivery.util.EmailRequirements;
 import ru.kzn.buzanov.delivery.integration.account.AccountProvisionResult;
-import ru.kzn.buzanov.delivery.repository.CourierProfileRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CourierService {
 
     private final OrganizationMemberRepository memberRepository;
-    private final CourierProfileRepository courierProfileRepository;
     private final AccessControlService accessControl;
     private final MemberService memberService;
     private final DeliveryUserProfileService profileService;
     private final AccountUserClient accountUserClient;
     private final AccountProvisioningClient accountProvisioningClient;
-    private final DeliveryDtoMapper mapper;
+    private final CourierMembershipChecks courierMembershipChecks;
 
     @Transactional(readOnly = true)
     public List<CourierDto> list(Long userId, UUID courierServiceId) {
         accessControl.requireServiceStaff(userId, courierServiceId);
         return memberRepository.findByOrganizationIdAndRole(courierServiceId, MemberRole.courier).stream()
-                .map(member -> toCourierDto(member, courierServiceId))
+                .map(member -> courierMembershipChecks.toCourierDto(member, courierServiceId))
                 .toList();
     }
 
@@ -61,33 +59,70 @@ public class CourierService {
 
     private CreateCourierResponse createWithProvisioning(Long actorUserId, CreateCourierRequest request) {
         accessControl.requireServiceStaff(actorUserId, request.courierServiceId());
-        AccountProvisionResult provisioned = provisionCourierAccount(
-                request.fullName().trim(),
-                request.phone().trim(),
-                EmailRequirements.requireEmail(request.email()));
-        assertNotAlreadyMember(request.courierServiceId(), provisioned.userId());
+        String fullName = request.fullName().trim();
+        String phone = request.phone().trim();
+        String email = EmailRequirements.requireEmail(request.email());
 
+        log.info("Courier add: provisioning account for phone={}, email={}, serviceId={}",
+                phone, email, request.courierServiceId());
+        AccountProvisionResult provisioned = provisionCourierAccount(fullName, phone, email);
+        log.info("Courier add: account user found/created userId={}", provisioned.userId());
+
+        courierMembershipChecks.ensureCanAddCourier(request.courierServiceId(), provisioned.userId());
+
+        log.info("Courier add: creating membership for userId={} in serviceId={}",
+                provisioned.userId(), request.courierServiceId());
         var member = memberService.addMembershipForOrganization(
                 request.courierServiceId(),
                 provisioned.userId(),
                 MemberRole.courier,
-                request.fullName().trim());
+                fullName);
         OrganizationMember organizationMember = memberRepository.findById(member.id()).orElseThrow();
-        CourierDto courier = toCourierDto(organizationMember, request.courierServiceId());
+        log.info("Courier add: membership created memberId={}, courier profile ensured",
+                organizationMember.getId());
+
+        CourierDto courier = courierMembershipChecks.toCourierDto(organizationMember, request.courierServiceId());
         ProvisioningCredentialsDto credentials = ProvisioningCredentialsDto.fromProvision(
                 provisioned.login(), provisioned.temporaryPassword());
         return new CreateCourierResponse(courier, credentials);
     }
 
     private AccountProvisionResult provisionCourierAccount(String fullName, String phone, String email) {
-        return accountProvisioningClient.provisionWebEmployee(
-                AccountProvisionRequest.forCourier(fullName, phone, email));
+        try {
+            return accountProvisioningClient.provisionWebEmployee(
+                    AccountProvisionRequest.forCourier(fullName, phone, email));
+        } catch (ResponseStatusException ex) {
+            CourierConflictException conflict = mapProvisionConflict(ex);
+            if (conflict != null) {
+                throw conflict;
+            }
+            throw ex;
+        }
+    }
+
+    private static CourierConflictException mapProvisionConflict(ResponseStatusException ex) {
+        if (ex.getStatusCode() != HttpStatus.CONFLICT) {
+            return null;
+        }
+        String reason = ex.getReason() != null ? ex.getReason() : "";
+        String lower = reason.toLowerCase();
+        if (lower.contains("email")) {
+            return new CourierConflictException("email_already_used", reason, "email");
+        }
+        if (lower.contains("телефон") || lower.contains("phone")) {
+            return new CourierConflictException("phone_already_used", reason, "phone");
+        }
+        if (lower.contains("логин") || lower.contains("login")) {
+            return new CourierConflictException("login_already_used", reason, "login");
+        }
+        return new CourierConflictException("account_conflict", reason);
     }
 
     private CourierDto createLegacy(Long actorUserId, CreateCourierRequest request) {
         accessControl.requireServiceStaff(actorUserId, request.courierServiceId());
         accountUserClient.requireUserExists(request.userId());
-        assertNotAlreadyMember(request.courierServiceId(), request.userId());
+        log.info("Courier add (legacy): userId={} for serviceId={}", request.userId(), request.courierServiceId());
+        courierMembershipChecks.ensureCanAddCourier(request.courierServiceId(), request.userId());
 
         String displayName = request.displayName() != null && !request.displayName().isBlank()
                 ? request.displayName().trim()
@@ -98,28 +133,17 @@ public class CourierService {
                 MemberRole.courier,
                 displayName);
         OrganizationMember organizationMember = memberRepository.findById(member.id()).orElseThrow();
-        return toCourierDto(organizationMember, request.courierServiceId());
-    }
-
-    private void assertNotAlreadyMember(UUID courierServiceId, Long userId) {
-        var existing = memberRepository.findByOrganizationIdAndUserId(courierServiceId, userId);
-        if (existing.isPresent()) {
-            OrganizationMember member = existing.get();
-            if (member.getRole() != MemberRole.courier) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Пользователь уже участник с другой ролью");
-            }
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Курьер уже добавлен в службу");
-        }
+        return courierMembershipChecks.toCourierDto(organizationMember, request.courierServiceId());
     }
 
     @Transactional(readOnly = true)
     public CourierDto get(Long userId, UUID memberId) {
         OrganizationMember member = accessControl.requireCourierMember(memberId);
         if (member.getUserId().equals(userId)) {
-            return toCourierDto(member, member.getOrganizationId());
+            return courierMembershipChecks.toCourierDto(member, member.getOrganizationId());
         }
         accessControl.requireServiceStaff(userId, member.getOrganizationId());
-        return toCourierDto(member, member.getOrganizationId());
+        return courierMembershipChecks.toCourierDto(member, member.getOrganizationId());
     }
 
     @Transactional
@@ -139,7 +163,7 @@ public class CourierService {
         }
         memberRepository.save(member);
         profileService.syncFromMembership(member);
-        return toCourierDto(member, member.getOrganizationId());
+        return courierMembershipChecks.toCourierDto(member, member.getOrganizationId());
     }
 
     @Transactional
@@ -148,16 +172,5 @@ public class CourierService {
         accessControl.requireServiceStaff(actorUserId, member.getOrganizationId());
         AccountProvisionResult provisioned = accountProvisioningClient.resetWebCredentials(member.getUserId());
         return ProvisioningCredentialsDto.fromProvision(provisioned.login(), provisioned.temporaryPassword());
-    }
-
-    private CourierDto toCourierDto(OrganizationMember member, UUID courierServiceId) {
-        CourierProfile profile = courierProfileRepository.findByMemberId(member.getId())
-                .orElseGet(() -> {
-                    CourierProfile p = new CourierProfile();
-                    p.setBalance(BigDecimal.ZERO);
-                    p.setCompletedOrdersCount(0);
-                    return p;
-                });
-        return mapper.toCourierDto(member, profile, courierServiceId);
     }
 }

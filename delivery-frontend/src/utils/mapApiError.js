@@ -1,9 +1,20 @@
 /**
  * Понятные сообщения для ответов delivery-backend (ProblemDetail / error).
  */
+const CONFLICT_MESSAGES = {
+  courier_already_in_service: 'Курьер уже есть в вашей службе',
+  member_other_role: 'Пользователь уже состоит в службе с другой ролью',
+  email_already_used: 'Пользователь с таким email уже существует',
+  phone_already_used: 'Пользователь с таким телефоном уже существует',
+  login_already_used: 'Этот логин уже занят',
+}
+
 export function mapDeliveryApiError(err, fallback = 'Не удалось выполнить операцию') {
-  const msg = (err?.message || err?.error || '').trim()
+  const code = (err?.error || '').trim()
+  const msg = (err?.message || '').trim()
+
   if (err?.status === 409) {
+    if (code && CONFLICT_MESSAGES[code]) return CONFLICT_MESSAGES[code]
     if (/телефон|номером телефона/i.test(msg)) return 'Пользователь с таким телефоном уже существует'
     if (/email/i.test(msg)) return msg
     if (msg && !/^HTTP\s\d+/i.test(msg)) return msg
@@ -21,4 +32,3 @@ export function mapDeliveryApiError(err, fallback = 'Не удалось вып�
   if (msg && !/^HTTP\s\d+/i.test(msg)) return msg
   return fallback
 }
-

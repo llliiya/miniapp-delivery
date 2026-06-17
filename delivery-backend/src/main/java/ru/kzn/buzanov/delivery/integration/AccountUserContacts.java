@@ -4,6 +4,7 @@ public record AccountUserContacts(
         Long userId,
         String telegramId,
         String maxId,
-        String email
+        String email,
+        String phone
 ) {
 }

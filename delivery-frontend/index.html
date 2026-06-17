@@ -103,7 +103,13 @@
         function storeDeliveryOrderStartParam(startParam) {
           if (!startParam || typeof startParam !== 'string') return;
           try {
-            if (startParam.indexOf('delivery_order_') === 0) {
+            if (startParam.indexOf('delivery_assign_order_') === 0) {
+              sessionStorage.setItem(
+                'delivery_pending_order_id',
+                startParam.slice('delivery_assign_order_'.length),
+              );
+              sessionStorage.setItem('delivery_pending_order_kind', 'assign');
+            } else if (startParam.indexOf('delivery_order_') === 0) {
               sessionStorage.setItem(
                 'delivery_pending_order_id',
                 startParam.slice('delivery_order_'.length),

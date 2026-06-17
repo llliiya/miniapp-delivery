@@ -18,10 +18,13 @@ import JoinCourierPage from './pages/auth/JoinCourierPage.jsx'
 import {
   capturePendingOrderDeeplink,
   consumePendingOrderDeeplink,
+  isAssignOrderStartParam,
+  isPendingAssignOrderDeeplink,
   logDeeplink,
   markDeeplinkHandled,
   isDeeplinkHandled,
   isOnCourierOrderRoute,
+  peekPendingOrderDeeplinkKind,
   peekPendingOrderDeeplinkPath,
   readMyOrdersDeeplinkFromEnvironment,
   readRawStartParamFromEnvironment,
@@ -70,7 +73,9 @@ function DeeplinkHandler() {
       const rawStartParam = readRawStartParamFromEnvironment()
       const envOrderId = readStartParamFromEnvironment()
       if (envOrderId && isOnCourierOrderRoute(location.pathname, envOrderId)) {
-        markDeeplinkHandled()
+        if (!isAssignOrderStartParam(rawStartParam) && !isPendingAssignOrderDeeplink()) {
+          markDeeplinkHandled()
+        }
         logDeeplink('navigate_skipped', { reason: 'already_on_order_route', path: location.pathname })
         return true
       }
@@ -83,8 +88,11 @@ function DeeplinkHandler() {
         return true
       }
       if (isPendingCourier) {
-        logDeeplink('navigate_skipped', { reason: 'pending_courier' })
-        return true
+        const hasOrderDeeplink = peekPendingOrderDeeplinkPath() || envOrderId
+        if (!hasOrderDeeplink) {
+          logDeeplink('navigate_skipped', { reason: 'pending_courier' })
+          return true
+        }
       }
 
       let path = peekPendingOrderDeeplinkPath()
@@ -95,9 +103,13 @@ function DeeplinkHandler() {
       }
 
       if (path) {
-        consumePendingOrderDeeplink()
-        markDeeplinkHandled()
-        logDeeplink('navigate', { target: path, rawStartParam })
+        const assignDeeplink =
+          isAssignOrderStartParam(rawStartParam) || peekPendingOrderDeeplinkKind() === 'assign'
+        if (!assignDeeplink) {
+          consumePendingOrderDeeplink()
+          markDeeplinkHandled()
+        }
+        logDeeplink('navigate', { target: path, rawStartParam, assignDeeplink })
         navigate(path, { replace: true })
         return true
       }

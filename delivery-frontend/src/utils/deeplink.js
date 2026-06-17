@@ -128,6 +128,9 @@ export function readRawStartParamFromEnvironment() {
 
 export function readOrderIdFromStartParam(value) {
   if (typeof value !== 'string') return null
+  if (value.startsWith('delivery_assign_order_')) {
+    return value.replace('delivery_assign_order_', '')
+  }
   if (value.startsWith('delivery_order_')) {
     return value.replace('delivery_order_', '')
   }
@@ -135,6 +138,10 @@ export function readOrderIdFromStartParam(value) {
     return value.replace('delivery_my_order_', '')
   }
   return null
+}
+
+export function isAssignOrderStartParam(value) {
+  return typeof value === 'string' && value.startsWith('delivery_assign_order_')
 }
 
 export function isMyOrdersStartParam(value) {
@@ -157,6 +164,14 @@ export function resolveCourierOrderDeeplinkPath(orderId, rawStartParam = readRaw
   return `/courier/orders/${orderId}`
 }
 
+export function peekPendingOrderDeeplinkKind() {
+  return sessionStorage.getItem(STORAGE_KIND_KEY)
+}
+
+export function isPendingAssignOrderDeeplink() {
+  return peekPendingOrderDeeplinkKind() === 'assign'
+}
+
 export function capturePendingOrderDeeplink() {
   if (isDeeplinkHandled()) {
     logDeeplink('capture', { stored: false, reason: 'already_handled' })
@@ -165,8 +180,14 @@ export function capturePendingOrderDeeplink() {
   const raw = readRawStartParamFromEnvironment()
   const orderId = readOrderIdFromStartParam(raw)
   if (orderId) {
+    let kind = 'free'
+    if (isMyOrderStartParam(raw)) {
+      kind = 'my'
+    } else if (isAssignOrderStartParam(raw)) {
+      kind = 'assign'
+    }
     sessionStorage.setItem(STORAGE_KEY, orderId)
-    sessionStorage.setItem(STORAGE_KIND_KEY, isMyOrderStartParam(raw) ? 'my' : 'free')
+    sessionStorage.setItem(STORAGE_KIND_KEY, kind)
     logDeeplink('capture', { stored: true })
   } else {
     logDeeplink('capture', { stored: false })
@@ -180,7 +201,9 @@ export function consumePendingOrderDeeplink() {
   if (orderId) {
     sessionStorage.removeItem(STORAGE_KEY)
     sessionStorage.removeItem(STORAGE_KIND_KEY)
-    const path = kind === 'my' ? `/courier/my-orders/${orderId}` : `/courier/orders/${orderId}`
+    const path = kind === 'my'
+      ? `/courier/my-orders/${orderId}`
+      : `/courier/orders/${orderId}`
     logDeeplink('consume', { orderId, kind, navigatedPath: path })
     return { orderId, kind }
   }
@@ -196,7 +219,8 @@ export function peekPendingOrderDeeplinkPath() {
   const orderId = peekPendingOrderDeeplink()
   if (!orderId) return null
   const kind = sessionStorage.getItem(STORAGE_KIND_KEY)
-  return kind === 'my' ? `/courier/my-orders/${orderId}` : `/courier/orders/${orderId}`
+  if (kind === 'my') return `/courier/my-orders/${orderId}`
+  return `/courier/orders/${orderId}`
 }
 
 export function readMyOrdersDeeplinkFromEnvironment() {
