@@ -8,6 +8,12 @@ import {
   PUBLICATION_STATUS,
 } from '../../utils/publicationStatus.js'
 
+function fmtMoney(value) {
+  const n = value != null ? Number(value) : 0
+  if (Number.isNaN(n)) return '0 ₽'
+  return `${n.toLocaleString('ru-RU')} ₽`
+}
+
 function fmtInstant(iso) {
   if (!iso) return '—'
   return formatOrderDateTime(iso)
@@ -77,6 +83,33 @@ export default function OrderDetailView({
         <div className="order-card__block">
           <div className="order-card__label">Выполнен:</div>
           <div className="order-card__value">{fmtInstant(order.completedAt)}</div>
+        </div>
+      ) : null}
+      {order.financialSnapshot ? (
+        <div className="order-card__block order-card__block--settlement">
+          <div className="order-card__label">Расчёт по доставке</div>
+          <dl className="order-settlement-dl">
+            <div>
+              <dt>Стоимость доставки</dt>
+              <dd>{fmtMoney(order.financialSnapshot.deliveryPrice)}</dd>
+            </div>
+            {order.financialSnapshot.platformFeeAmount > 0 ? (
+              <div>
+                <dt>Удержание платформы</dt>
+                <dd>−{fmtMoney(order.financialSnapshot.platformFeeAmount)}</dd>
+              </div>
+            ) : null}
+            {order.financialSnapshot.partnerRewardAmount > 0 ? (
+              <div>
+                <dt>Партнёрское вознаграждение</dt>
+                <dd>−{fmtMoney(order.financialSnapshot.partnerRewardAmount)}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>Начислено курьеру</dt>
+              <dd><strong>{fmtMoney(order.financialSnapshot.courierNetEarning)}</strong></dd>
+            </div>
+          </dl>
         </div>
       ) : null}
       </div>

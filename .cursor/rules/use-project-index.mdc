@@ -1,0 +1,30 @@
+---
+description: Навигация по проекту — сначала индексы, не полный скан
+alwaysApply: true
+---
+
+# Навигация miniapp-delivery
+
+Корень проекта: `c:\valentin\miniapp-delivery`. Читай `AGENTS.md` и `.cursor/index/`.
+
+## Обязательно
+
+1. Перед поиском по коду — открой релевантный файл из `.cursor/index/`.
+2. Grep/Glob только внутри `miniapp-delivery/`, не в `C:\Users\...` и не в `c:\valentin` целиком.
+3. Не вызывай `move_agent_to_root` — путь известен, работай напрямую.
+4. API frontend → `delivery-frontend/src/api/deliveryService.js`.
+5. Баг 500 → `docker logs delivery_dev-delivery-backend-1 --tail 80`, затем сервис из индекса фичи.
+
+## Запрещено без явной просьбы
+
+- Полный `Glob **/*` по проекту
+- Поиск проекта по всему домашнему каталогу
+- Полный Docker build всего стека
+- Task/subagent explore «very thorough» по всему репо
+
+## Фичи → индекс
+
+- Партнёрка → `.cursor/index/03-feature-partner-program.md`
+- Заказы → `OrderController`, `OrderService`, `pages/*/Orders*`
+- Каналы → `PublicationChannelController`, `pages/service/ChannelsPage.jsx`
+- Регистрация → `*RegistrationRequest*`

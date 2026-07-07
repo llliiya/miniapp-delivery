@@ -23,7 +23,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,7 +45,7 @@ class CourierBalanceServiceTest {
         DeliveryOrder order = sampleOrder();
         order.setCourierUserId(null);
 
-        courierBalanceService.accrueOnOrderCompleted(order);
+        courierBalanceService.creditOrderNetEarning(order, new BigDecimal("150.00"));
 
         verify(balanceTransactionRepository, never()).save(any());
         verify(courierProfileRepository, never()).save(any());
@@ -58,17 +57,16 @@ class CourierBalanceServiceTest {
         when(balanceTransactionRepository.existsByOrderIdAndType(order.getId(), BalanceTransactionType.ORDER_COMPLETED))
                 .thenReturn(true);
 
-        courierBalanceService.accrueOnOrderCompleted(order);
+        courierBalanceService.creditOrderNetEarning(order, new BigDecimal("150.00"));
 
         verify(balanceTransactionRepository, never()).save(any());
         verify(courierProfileRepository, never()).save(any());
     }
 
     @Test
-    void accruesOrderPriceToCourierBalance() {
+    void creditsNetEarningToCourierBalance() {
         DeliveryOrder order = sampleOrder();
         order.setCourierUserId(42L);
-        order.setPrice(new BigDecimal("150.00"));
 
         UUID memberId = UUID.randomUUID();
         OrganizationMember member = new OrganizationMember();
@@ -89,7 +87,7 @@ class CourierBalanceServiceTest {
                 .thenReturn(Optional.of(member));
         when(courierProfileRepository.findByMemberId(memberId)).thenReturn(Optional.of(profile));
 
-        courierBalanceService.accrueOnOrderCompleted(order);
+        courierBalanceService.creditOrderNetEarning(order, new BigDecimal("150.00"));
 
         ArgumentCaptor<BalanceTransaction> txCaptor = ArgumentCaptor.forClass(BalanceTransaction.class);
         verify(balanceTransactionRepository).save(txCaptor.capture());

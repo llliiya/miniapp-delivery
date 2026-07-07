@@ -7,6 +7,8 @@ const CONFLICT_MESSAGES = {
   email_already_used: 'Пользователь с таким email уже существует',
   phone_already_used: 'Пользователь с таким телефоном уже существует',
   login_already_used: 'Этот логин уже занят',
+  payout_once_per_month:
+    'Партнёрскую выплату можно запросить не чаще одного раза в календарный месяц',
 }
 
 export function mapDeliveryApiError(err, fallback = 'Не удалось выполнить операцию') {

@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-courier-balance-payout-details
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: courier_balance_payout_requests
+            columns:
+              - column:
+                  name: payout_details
+                  type: jsonb
+              - column:
+                  name: scheduled_payout_date
+                  type: date

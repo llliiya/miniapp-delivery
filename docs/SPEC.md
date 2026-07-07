@@ -41,7 +41,7 @@ Telegram / web Mini App для курьерской доставки еды (и 
 **Внешний префикс API:** `/api/delivery/...`  
 **Внутренний (в backend):** `/me`, `/orders`, `/couriers`, …
 
-Локальный стек: `docker-compose.dev.yml` + `miniapp-deploy/deploy/dev-stack.env`.
+Локальный стек: `docker-compose.dev.yml` (все параметры в `environment` / `build.args` внутри compose).
 
 ---
 

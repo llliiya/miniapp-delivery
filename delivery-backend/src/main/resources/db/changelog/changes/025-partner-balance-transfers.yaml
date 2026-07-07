@@ -1,0 +1,177 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-partner-ledger-transactions
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: partner_ledger_transactions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: partner_account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: decimal(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: balance_transfer_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: partner_ledger_transactions
+            baseColumnNames: partner_account_id
+            referencedTableSchemaName: delivery
+            referencedTableName: partner_accounts
+            referencedColumnNames: id
+            constraintName: fk_partner_ledger_account
+        - createIndex:
+            schemaName: delivery
+            tableName: partner_ledger_transactions
+            indexName: idx_partner_ledger_account
+            columns:
+              - column:
+                  name: partner_account_id
+
+  - changeSet:
+      id: 025-partner-balance-transfers
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: partner_balance_transfers
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: partner_account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: decimal(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scheduled_execution_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: executed_at
+                  type: timestamptz
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payout_cycle_month
+                  type: varchar(7)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: partner_ledger_transaction_id
+                  type: uuid
+              - column:
+                  name: main_balance_ledger_transaction_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: partner_balance_transfers
+            baseColumnNames: partner_account_id
+            referencedTableSchemaName: delivery
+            referencedTableName: partner_accounts
+            referencedColumnNames: id
+            constraintName: fk_partner_balance_transfer_account
+        - createIndex:
+            schemaName: delivery
+            tableName: partner_balance_transfers
+            indexName: idx_partner_balance_transfer_account
+            columns:
+              - column:
+                  name: partner_account_id
+        - createIndex:
+            schemaName: delivery
+            tableName: partner_balance_transfers
+            indexName: idx_partner_balance_transfer_status_date
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: scheduled_execution_date
+
+  - changeSet:
+      id: 025-migrate-partner-payout-transfers
+      author: delivery
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              INSERT INTO delivery.partner_balance_transfers (
+                id, user_id, partner_account_id, amount, scheduled_execution_date,
+                executed_at, status, payout_cycle_month,
+                partner_ledger_transaction_id, main_balance_ledger_transaction_id,
+                created_at, updated_at
+              )
+              SELECT
+                p.id,
+                COALESCE(m.user_id, 0),
+                p.partner_account_id,
+                p.amount,
+                COALESCE(p.scheduled_payout_date, (p.created_at AT TIME ZONE 'UTC')::date),
+                p.processed_at,
+                CASE WHEN p.status = 'PAID' THEN 'COMPLETED' ELSE 'SCHEDULED' END,
+                COALESCE(p.payout_cycle_month, to_char(p.created_at AT TIME ZONE 'UTC', 'YYYY-MM')),
+                NULL,
+                NULL,
+                p.created_at,
+                p.updated_at
+              FROM delivery.partner_payout_requests p
+              JOIN delivery.partner_accounts a ON a.id = p.partner_account_id
+              LEFT JOIN delivery.organization_members m ON m.id = a.member_id
+              WHERE p.payout_method = 'TRANSFER_TO_MAIN_BALANCE'
+                AND NOT EXISTS (
+                  SELECT 1 FROM delivery.partner_balance_transfers t WHERE t.id = p.id
+                );
+              DELETE FROM delivery.partner_payout_requests
+              WHERE payout_method = 'TRANSFER_TO_MAIN_BALANCE';

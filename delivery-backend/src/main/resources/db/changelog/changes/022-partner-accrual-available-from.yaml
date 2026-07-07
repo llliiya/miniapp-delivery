@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-partner-accrual-available-from
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: partner_accruals
+            columns:
+              - column:
+                  name: available_from
+                  type: timestamptz
+        - sql:
+            splitStatements: false
+            sql: |
+              UPDATE delivery.partner_accruals
+              SET available_from = created_at
+              WHERE available_from IS NULL;
+        - addNotNullConstraint:
+            schemaName: delivery
+            tableName: partner_accruals
+            columnName: available_from
+            columnDataType: timestamptz

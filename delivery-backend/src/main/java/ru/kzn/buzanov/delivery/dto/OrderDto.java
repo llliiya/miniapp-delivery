@@ -45,6 +45,7 @@ public record OrderDto(
         Instant completedAt,
         Instant cancelledAt,
         List<OrderPublicationFailureDto> publicationFailures,
-        boolean canRepublish
+        boolean canRepublish,
+        OrderFinancialSnapshotDto financialSnapshot
 ) {
 }

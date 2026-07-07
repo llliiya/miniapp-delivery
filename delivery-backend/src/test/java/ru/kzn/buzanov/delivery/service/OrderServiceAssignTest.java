@@ -14,6 +14,7 @@ import ru.kzn.buzanov.delivery.repository.CourierProfileRepository;
 import ru.kzn.buzanov.delivery.repository.DeliveryOrderRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationRepository;
+import ru.kzn.buzanov.delivery.repository.OrderFinancialSnapshotRepository;
 import ru.kzn.buzanov.delivery.repository.PickupPointRepository;
 import ru.kzn.buzanov.delivery.service.notification.CourierMessengerNotificationService;
 import ru.kzn.buzanov.delivery.service.publication.OrderChannelProjectionService;
@@ -66,7 +67,11 @@ class OrderServiceAssignTest {
     @Mock
     private OrderPublicationEventPublisher publicationEventPublisher;
     @Mock
-    private CourierBalanceService courierBalanceService;
+    private OrderSettlementService orderSettlementService;
+    @Mock
+    private PartnerAccrualService partnerAccrualService;
+    @Mock
+    private OrderFinancialSnapshotRepository financialSnapshotRepository;
 
     @InjectMocks
     private OrderService orderService;

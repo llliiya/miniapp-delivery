@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { DEV_AUTH_ENABLED } from '../../config.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { canManageServiceSettings } from '../../hooks/useActiveOrg.js'
 import {
+  displayOrganizationName,
   isCurrentOrganization,
   labelForOrgStatus,
   labelForOrgType,
@@ -46,6 +48,11 @@ export default function ServiceProfilePage() {
     [activeMembership, deliveryMe],
   )
 
+  const canManageService = useMemo(
+    () => canManageServiceSettings(activeMembership, deliveryMe?.memberships),
+    [activeMembership, deliveryMe],
+  )
+
   const serviceRole = activeMembership?.role || serviceMembership?.role
   const serviceStatus = serviceMembership?.status || activeMembership?.status
   const statusBadge = serviceStatus ? labelForOrgStatus(serviceStatus) : null
@@ -61,10 +68,9 @@ export default function ServiceProfilePage() {
     }
   }
 
-  const serviceName =
-    serviceMembership?.organizationName?.trim() ||
-    activeMembership?.organizationName?.trim() ||
-    'Служба доставки'
+  const serviceName = displayOrganizationName(
+    serviceMembership?.organizationName || activeMembership?.organizationName,
+  )
 
   return (
     <div className="service-profile-page">
@@ -89,6 +95,30 @@ export default function ServiceProfilePage() {
           Ваша роль: <strong>{labelForRole(serviceRole)}</strong>
         </p>
       </section>
+
+      {canManageService && (
+        <section className="card service-profile-management">
+          <h2 className="service-profile-section__title">Управление</h2>
+          <div className="service-profile-management__links">
+            <Link to="/service/partner-program" className="service-profile-management__item">
+              <span className="service-profile-management__item-title">
+                Партнёрская программа — настройки
+              </span>
+              <span className="service-profile-management__item-hint muted">
+                Правила начислений, заявки на выплату и журнал приглашений
+              </span>
+            </Link>
+            <Link to="/service/financial-settings" className="service-profile-management__item">
+              <span className="service-profile-management__item-title">
+                Вознаграждение платформы
+              </span>
+              <span className="service-profile-management__item-hint muted">
+                Процент или фиксированная сумма, удерживаемые из стоимости доставки
+              </span>
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className="card service-profile-user">
         <h2 className="service-profile-section__title">Ваш профиль</h2>

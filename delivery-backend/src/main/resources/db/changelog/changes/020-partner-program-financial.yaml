@@ -1,0 +1,446 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-partner-program-rules
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: partner_program_rules
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: courier_service_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: referrer_type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: invitee_type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: calculation_type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: percent_value
+                  type: decimal(8,4)
+              - column:
+                  name: fixed_amount
+                  type: decimal(14,2)
+              - column:
+                  name: calculation_base
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: duration_months
+                  type: int
+              - column:
+                  name: effective_from
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: accrual_conditions
+                  type: jsonb
+              - column:
+                  name: payout_restrictions
+                  type: jsonb
+              - column:
+                  name: min_payout_amount
+                  type: decimal(14,2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payout_methods
+                  type: jsonb
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: partner_program_rules
+            baseColumnNames: courier_service_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_partner_rules_courier_service
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: partner_program_rules
+            columnNames: courier_service_id, referrer_type, invitee_type
+            constraintName: uq_partner_rules_relationship
+
+  - changeSet:
+      id: 020-partner-referrals
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: partner_referrals
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: courier_service_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: referrer_type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: referrer_member_id
+                  type: uuid
+              - column:
+                  name: referrer_organization_id
+                  type: uuid
+              - column:
+                  name: invitee_type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: invitee_member_id
+                  type: uuid
+              - column:
+                  name: invitee_organization_id
+                  type: uuid
+              - column:
+                  name: partner_code
+                  type: varchar(8)
+              - column:
+                  name: connected_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: program_expires_at
+                  type: timestamptz
+              - column:
+                  name: source_courier_request_id
+                  type: uuid
+              - column:
+                  name: source_restaurant_request_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: partner_referrals
+            baseColumnNames: courier_service_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_partner_ref_courier_service
+        - createIndex:
+            schemaName: delivery
+            tableName: partner_referrals
+            indexName: idx_partner_ref_invitee_member
+            columns:
+              - column:
+                  name: invitee_member_id
+        - createIndex:
+            schemaName: delivery
+            tableName: partner_referrals
+            indexName: idx_partner_ref_invitee_org
+            columns:
+              - column:
+                  name: invitee_organization_id
+        - createIndex:
+            schemaName: delivery
+            tableName: partner_referrals
+            indexName: idx_partner_ref_referrer_member
+            columns:
+              - column:
+                  name: referrer_member_id
+        - createIndex:
+            schemaName: delivery
+            tableName: partner_referrals
+            indexName: idx_partner_ref_referrer_org
+            columns:
+              - column:
+                  name: referrer_organization_id
+
+  - changeSet:
+      id: 020-partner-accounts
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: partner_accounts
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: courier_service_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: participant_type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: member_id
+                  type: uuid
+              - column:
+                  name: organization_id
+                  type: uuid
+              - column:
+                  name: balance
+                  type: decimal(14,2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: available_for_payout
+                  type: decimal(14,2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pending_payout
+                  type: decimal(14,2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: paid_out
+                  type: decimal(14,2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: transferred_to_main_balance
+                  type: decimal(14,2)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: partner_accounts
+            baseColumnNames: courier_service_id
+            referencedTableSchemaName: delivery
+            referencedTableName: organizations
+            referencedColumnNames: id
+            constraintName: fk_partner_account_courier_service
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE UNIQUE INDEX uq_partner_account_courier_member
+              ON delivery.partner_accounts (member_id)
+              WHERE member_id IS NOT NULL;
+              CREATE UNIQUE INDEX uq_partner_account_restaurant
+              ON delivery.partner_accounts (organization_id)
+              WHERE organization_id IS NOT NULL;
+
+  - changeSet:
+      id: 020-partner-accruals
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: partner_accruals
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: partner_account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: partner_referral_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: decimal(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: calculation_base_amount
+                  type: decimal(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: settings_snapshot
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reversed_at
+                  type: timestamptz
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: partner_accruals
+            baseColumnNames: partner_account_id
+            referencedTableSchemaName: delivery
+            referencedTableName: partner_accounts
+            referencedColumnNames: id
+            constraintName: fk_partner_accrual_account
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: partner_accruals
+            baseColumnNames: partner_referral_id
+            referencedTableSchemaName: delivery
+            referencedTableName: partner_referrals
+            referencedColumnNames: id
+            constraintName: fk_partner_accrual_referral
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: partner_accruals
+            baseColumnNames: order_id
+            referencedTableSchemaName: delivery
+            referencedTableName: delivery_orders
+            referencedColumnNames: id
+            constraintName: fk_partner_accrual_order
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE UNIQUE INDEX uq_partner_accrual_order_referral
+              ON delivery.partner_accruals (order_id, partner_referral_id)
+              WHERE status = 'ACCRUED';
+
+  - changeSet:
+      id: 020-partner-payout-requests
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: partner_payout_requests
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: partner_account_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: decimal(14,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payout_method
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scheduled_payout_date
+                  type: date
+              - column:
+                  name: payout_details
+                  type: jsonb
+              - column:
+                  name: processed_at
+                  type: timestamptz
+              - column:
+                  name: processed_by
+                  type: bigint
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableSchemaName: delivery
+            baseTableName: partner_payout_requests
+            baseColumnNames: partner_account_id
+            referencedTableSchemaName: delivery
+            referencedTableName: partner_accounts
+            referencedColumnNames: id
+            constraintName: fk_partner_payout_account
+        - createIndex:
+            schemaName: delivery
+            tableName: partner_payout_requests
+            indexName: idx_partner_payout_account
+            columns:
+              - column:
+                  name: partner_account_id

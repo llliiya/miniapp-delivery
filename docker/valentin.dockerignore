@@ -1,0 +1,35 @@
+# Копия для context: .. (корень c:\valentin).
+# При деплое/клонировании: скопировать или symlink в c:\valentin\.dockerignore
+# delivery-backend в dev использует ./delivery-backend/.dockerignore
+
+# Maven build output
+**/target/
+
+# Git
+**/.git/
+**/.gitignore
+
+# Logs
+**/logs/
+**/*.log
+
+# IDE
+**/.idea/
+**/.vscode/
+**/*.iml
+**/.classpath
+**/.project
+**/.settings/
+
+# Frontend
+**/node_modules/
+
+# Temp / OS
+**/tmp/
+**/temp/
+**/*~
+**/.DS_Store
+**/Thumbs.db
+
+# Cursor / editor
+**/.cursor/

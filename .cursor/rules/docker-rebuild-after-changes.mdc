@@ -1,0 +1,27 @@
+---
+description: Пересборка Docker после изменений в delivery-стеке
+globs: delivery-frontend/**,delivery-backend/**
+alwaysApply: false
+---
+
+# Docker rebuild after code changes
+
+## Backend (delivery-backend)
+
+Следуй правилу `.cursor/rules/dev-backend-build.mdc`:
+- **не** пересобирай backend автоматически после правок Java;
+- пересборка только по команде «пересобери backend» через `scripts/rebuild-dev-backend.ps1`.
+
+## Frontend
+
+После изменений в `delivery-frontend` **самостоятельно** пересобирай только frontend из `c:\valentin\miniapp-delivery`:
+
+```powershell
+cd C:\valentin\miniapp-delivery
+docker compose -f .\docker-compose.dev.yml build --no-cache delivery-frontend
+docker compose -f .\docker-compose.dev.yml up -d --no-deps delivery-frontend
+```
+
+- Для frontend используй `--no-cache`, чтобы Docker не пропустил `npm run build` из кэша.
+- Не пересобирай gateway и backend при правках frontend.
+- В ответе кратко сообщи, что контейнер пересобран и запущен.

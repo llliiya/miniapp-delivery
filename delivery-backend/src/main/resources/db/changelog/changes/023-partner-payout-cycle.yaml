@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-partner-accrual-cycle-columns
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: partner_accruals
+            columns:
+              - column:
+                  name: accrual_period_month
+                  type: varchar(7)
+              - column:
+                  name: payout_cycle_month
+                  type: varchar(7)
+        - sql:
+            splitStatements: false
+            sql: |
+              UPDATE delivery.partner_accruals a
+              SET accrual_period_month = to_char(a.created_at AT TIME ZONE 'UTC', 'YYYY-MM'),
+                  payout_cycle_month = to_char((a.created_at AT TIME ZONE 'UTC' + interval '1 month'), 'YYYY-MM'),
+                  available_from = (date_trunc('month', a.created_at AT TIME ZONE 'UTC' + interval '1 month') AT TIME ZONE 'UTC')
+              WHERE accrual_period_month IS NULL;
+        - addNotNullConstraint:
+            schemaName: delivery
+            tableName: partner_accruals
+            columnName: accrual_period_month
+            columnDataType: varchar(7)
+        - addNotNullConstraint:
+            schemaName: delivery
+            tableName: partner_accruals
+            columnName: payout_cycle_month
+            columnDataType: varchar(7)
+
+  - changeSet:
+      id: 023-partner-payout-request-cycle-column
+      author: delivery
+      changes:
+        - addColumn:
+            schemaName: delivery
+            tableName: partner_payout_requests
+            columns:
+              - column:
+                  name: payout_cycle_month
+                  type: varchar(7)

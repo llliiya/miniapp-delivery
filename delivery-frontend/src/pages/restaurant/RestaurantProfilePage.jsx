@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { DEV_AUTH_ENABLED } from '../../config.js'
 import {
   fetchRestaurantPartnerProgram,
+  createRestaurantPartnerPayout,
   listOrders,
   listOrganizationMembers,
   listPickupPoints,
@@ -96,6 +97,10 @@ export default function RestaurantProfilePage() {
     () => fetchRestaurantPartnerProgram(restaurantId),
     [restaurantId],
   )
+  const createPayout = useCallback(
+    (body) => createRestaurantPartnerPayout(restaurantId, body),
+    [restaurantId],
+  )
 
   return (
     <div className="role-profile-page">
@@ -156,6 +161,7 @@ export default function RestaurantProfilePage() {
 
       <PartnerProgramSection
         loadProgram={loadPartnerProgram}
+        createPayout={createPayout}
         disabled={!restaurantId}
         disabledMessage="Раздел доступен сотрудникам объекта."
       />

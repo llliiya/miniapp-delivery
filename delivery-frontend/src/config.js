@@ -15,6 +15,10 @@ const useLocalProxy =
 
 function resolveApiBaseUrl() {
   if (IS_DEV && useLocalProxy) {
+    // В dev API идёт напрямую на gateway :8080 (не через nginx :5173).
+    if (devApiBase.includes(':8080')) {
+      return devApiBase.replace(/\/$/, '')
+    }
     return ''
   }
   if (!devApiBase) {

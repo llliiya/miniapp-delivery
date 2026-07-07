@@ -45,6 +45,7 @@ public class RestaurantRegistrationRequestService {
     private final PartnerCodeService partnerCodeService;
     private final AccessControlService accessControl;
     private final RestaurantService restaurantService;
+    private final PartnerReferralService partnerReferralService;
 
     @Transactional
     public RestaurantRegistrationRequestDto createPublic(CreateRestaurantRegistrationRequest request) {
@@ -156,6 +157,9 @@ public class RestaurantRegistrationRequestService {
         entity.setProcessedAt(now);
         entity.setProcessedBy(userId);
         requestRepository.save(entity);
+
+        partnerReferralService.createFromApprovedRestaurantRequest(
+                entity, courierServiceId, created.object().id(), now);
 
         ProvisioningCredentialsDto credentials = created.ownerCredentials();
         return new ApproveRestaurantRegistrationResponse(
