@@ -21,9 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 public class JwtCurrentUserFilter extends OncePerRequestFilter {
 
     private static final String HEADER = "Authorization";
@@ -41,6 +42,23 @@ public class JwtCurrentUserFilter extends OncePerRequestFilter {
             throw new IllegalStateException("JWT secret is not configured (app.auth.jwt-secret / JWT_SECRET)");
         }
         secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        if (path == null || path.isEmpty()) {
+            path = request.getRequestURI();
+            String context = request.getContextPath();
+            if (context != null && !context.isEmpty() && path.startsWith(context)) {
+                path = path.substring(context.length());
+            }
+        }
+        if (path == null) {
+            path = "";
+        }
+        // Internal S2S paths use X-Delivery-Service-Key, not JWT.
+        return path.startsWith("/internal/") || path.equals("/internal");
     }
 
     @Override
@@ -67,7 +85,8 @@ public class JwtCurrentUserFilter extends OncePerRequestFilter {
             }
             Long userId = parseUserId(claims.getSubject());
             List<String> roles = parseRoles(claims);
-            currentUser = new CurrentUser(userId, roles);
+            UUID organizationId = parseOrganizationId(claims.get("organizationId"));
+            currentUser = new CurrentUser(userId, roles, organizationId);
         } catch (JwtException | IllegalArgumentException ex) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid bearer token");
             return;
@@ -119,5 +138,20 @@ public class JwtCurrentUserFilter extends OncePerRequestFilter {
             }
         }
         return roles;
+    }
+
+    private static UUID parseOrganizationId(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        String value = String.valueOf(raw).trim();
+        if (value.isEmpty()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("JWT organizationId is invalid");
+        }
     }
 }

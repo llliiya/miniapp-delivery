@@ -11,7 +11,6 @@ import ru.kzn.buzanov.delivery.config.DeliveryBotProperties;
 import ru.kzn.buzanov.delivery.service.DeliveryDeepLinkService;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MaxChannelPublisherTest {
@@ -47,11 +46,6 @@ class MaxChannelPublisherTest {
 
     @Test
     void buildWaitingForCourierMessageBody_usesTwoOpenAppButtons() {
-        when(deepLinkService.maxOrderOpenAppTarget(java.util.UUID.fromString("427effcf-8248-42fa-a836-9faa7eb5ce09")))
-                .thenReturn(new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_order_x"));
-        when(deepLinkService.maxAssignOrderOpenAppTarget(java.util.UUID.fromString("427effcf-8248-42fa-a836-9faa7eb5ce09")))
-                .thenReturn(new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_assign_order_x"));
-
         var body = publisher.buildWaitingForCourierMessageBody(
                 "order text",
                 new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_order_x"),
@@ -66,9 +60,6 @@ class MaxChannelPublisherTest {
 
     @Test
     void buildOpenAppMessageBody_usesWebAppAndPayloadFields() {
-        when(deepLinkService.maxOrderOpenAppTarget(java.util.UUID.fromString("427effcf-8248-42fa-a836-9faa7eb5ce09")))
-                .thenReturn(new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_order_x"));
-
         var body = publisher.buildOpenAppMessageBody(
                 "order text",
                 new DeliveryDeepLinkService.MaxOpenAppTarget("id544601208994_3_bot", "delivery_order_x"),

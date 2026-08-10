@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-GITHUB_TOKEN="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"
+GITHUB_TOKEN="${GITHUB_TOKEN:?Set GITHUB_TOKEN in the environment before running}"
 GITHUB_ORG="llliiya"
 BRANCH="main"
 DEPLOY_ROOT="/opt/delivery"

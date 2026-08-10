@@ -28,6 +28,14 @@ server:
 app:
   auth:
     jwt-secret: ${JWT_SECRET:}
+  service:
+    # Shared key for inbound S2S calls (header X-Delivery-Service-Key). Protects /internal/** only.
+    api-key: ${DELIVERY_SERVICE_API_KEY:}
+  restaurant:
+    # Direct URL to miniapp-restaurant for branch ownership / membership checks.
+    base-url: ${RESTAURANT_SERVICE_BASE_URL:${APP_RESTAURANT_BASE_URL:}}
+    connect-timeout-ms: ${RESTAURANT_CONNECT_TIMEOUT_MS:10000}
+    read-timeout-ms: ${RESTAURANT_READ_TIMEOUT_MS:30000}
 
 minapp:
   account:

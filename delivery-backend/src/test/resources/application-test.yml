@@ -1,0 +1,22 @@
+spring:
+  main:
+    banner-mode: off
+
+app:
+  auth:
+    jwt-secret: test-jwt-secret-for-integration-tests-only
+  service:
+    api-key: test-delivery-service-key
+  restaurant:
+    base-url:
+
+delivery:
+  telegram:
+    polling-enabled: false
+  max:
+    bot-token:
+
+logging:
+  level:
+    root: WARN
+    ru.kzn.buzanov.delivery: INFO

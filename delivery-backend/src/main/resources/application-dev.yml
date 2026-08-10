@@ -2,6 +2,10 @@ spring:
   jpa:
     show-sql: false
 
+app:
+  restaurant:
+    base-url: ${RESTAURANT_SERVICE_BASE_URL:${APP_RESTAURANT_BASE_URL:http://127.0.0.1:8095}}
+
 delivery:
   telegram:
     polling-enabled: ${DELIVERY_TELEGRAM_POLLING:true}

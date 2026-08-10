@@ -2,6 +2,7 @@ package ru.kzn.buzanov.delivery.api;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -13,12 +14,36 @@ import org.springframework.web.server.ResponseStatusException;
 import ru.kzn.buzanov.delivery.api.OrderConflictException;
 import ru.kzn.buzanov.delivery.api.CourierConflictException;
 import ru.kzn.buzanov.delivery.api.PartnerPayoutConflictException;
+import ru.kzn.buzanov.delivery.fulfillment.FulfillmentApiException;
+import ru.kzn.buzanov.delivery.fulfillment.restaurant.RestaurantServiceUnavailableException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+
+    @ExceptionHandler(FulfillmentApiException.class)
+    public ResponseEntity<ProblemDetail> handleFulfillment(FulfillmentApiException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
+        problem.setTitle(ex.getStatus().getReasonPhrase());
+        problem.setProperty("code", ex.getCode());
+        return ResponseEntity.status(ex.getStatus())
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    @ExceptionHandler(RestaurantServiceUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handleRestaurantUnavailable(RestaurantServiceUnavailableException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.SERVICE_UNAVAILABLE, "Restaurant service is temporarily unavailable");
+        problem.setTitle(HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase());
+        problem.setProperty("code", "DELIVERY_SERVICE_UNAVAILABLE");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
 
     @ExceptionHandler(CourierConflictException.class)
     public ResponseEntity<Map<String, Object>> handleCourierConflict(CourierConflictException ex) {

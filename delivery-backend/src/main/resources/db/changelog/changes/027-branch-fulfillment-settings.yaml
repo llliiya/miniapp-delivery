@@ -1,0 +1,139 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-branch-fulfillment-settings
+      author: delivery
+      changes:
+        - createTable:
+            schemaName: delivery
+            tableName: branch_fulfillment_settings
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: company_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: branch_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: delivery_enabled
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pickup_enabled
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: minimum_delivery_order_minor
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: delivery_fee_minor
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: free_delivery_from_minor
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: delivery_estimated_min_minutes
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: delivery_estimated_max_minutes
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pickup_estimated_minutes
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by_user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_by_user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+        - addUniqueConstraint:
+            schemaName: delivery
+            tableName: branch_fulfillment_settings
+            columnNames: branch_id
+            constraintName: uk_branch_fulfillment_settings_branch_id
+        - createIndex:
+            schemaName: delivery
+            tableName: branch_fulfillment_settings
+            indexName: idx_branch_fulfillment_settings_organization_id
+            columns:
+              - column:
+                  name: organization_id
+        - createIndex:
+            schemaName: delivery
+            tableName: branch_fulfillment_settings
+            indexName: idx_branch_fulfillment_settings_company_id
+            columns:
+              - column:
+                  name: company_id
+        - createIndex:
+            schemaName: delivery
+            tableName: branch_fulfillment_settings
+            indexName: idx_branch_fulfillment_settings_branch_id
+            columns:
+              - column:
+                  name: branch_id
+        - sql:
+            sql: |
+              ALTER TABLE delivery.branch_fulfillment_settings
+                ADD CONSTRAINT chk_bfs_money_non_negative
+                  CHECK (
+                    minimum_delivery_order_minor >= 0
+                    AND delivery_fee_minor >= 0
+                    AND (free_delivery_from_minor IS NULL OR free_delivery_from_minor >= 0)
+                    AND minimum_delivery_order_minor <= 100000000
+                    AND delivery_fee_minor <= 100000000
+                    AND (free_delivery_from_minor IS NULL OR free_delivery_from_minor <= 100000000)
+                  );
+              ALTER TABLE delivery.branch_fulfillment_settings
+                ADD CONSTRAINT chk_bfs_time_range
+                  CHECK (
+                    delivery_estimated_min_minutes BETWEEN 1 AND 1440
+                    AND delivery_estimated_max_minutes BETWEEN 1 AND 1440
+                    AND pickup_estimated_minutes BETWEEN 1 AND 1440
+                    AND delivery_estimated_min_minutes <= delivery_estimated_max_minutes
+                  );
+              ALTER TABLE delivery.branch_fulfillment_settings
+                ADD CONSTRAINT chk_bfs_at_least_one_method
+                  CHECK (delivery_enabled OR pickup_enabled);

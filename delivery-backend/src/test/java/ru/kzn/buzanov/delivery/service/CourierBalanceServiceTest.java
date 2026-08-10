@@ -54,6 +54,7 @@ class CourierBalanceServiceTest {
     @Test
     void skipsDuplicateAccrualForSameOrder() {
         DeliveryOrder order = sampleOrder();
+        order.setCourierUserId(42L);
         when(balanceTransactionRepository.existsByOrderIdAndType(order.getId(), BalanceTransactionType.ORDER_COMPLETED))
                 .thenReturn(true);
 

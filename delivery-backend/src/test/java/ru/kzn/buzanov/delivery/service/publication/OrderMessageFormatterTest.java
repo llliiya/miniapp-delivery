@@ -102,7 +102,7 @@ class OrderMessageFormatterTest {
     @Test
     void courierAssignedDmIncludesOrderDetailsAndCustomerPhone() {
         DeliveryOrder order = sampleOrder();
-        stubRepositories(order);
+        stubOrganization(order);
 
         String message = formatter.formatCourierAssignedDmTelegramHtml(order);
 
@@ -124,7 +124,7 @@ class OrderMessageFormatterTest {
     void courierAssignedDmOmitsCommentWhenBlank() {
         DeliveryOrder order = sampleOrder();
         order.setComment(null);
-        stubRepositories(order);
+        stubOrganization(order);
 
         String message = formatter.formatCourierAssignedDmPlain(order);
 
@@ -161,11 +161,15 @@ class OrderMessageFormatterTest {
     }
 
     private void stubRepositories(DeliveryOrder order) {
+        stubOrganization(order);
+        stubPickupPoint(order, PICKUP_PHONE);
+    }
+
+    private void stubOrganization(DeliveryOrder order) {
         Organization org = new Organization();
         org.setId(order.getRestaurantId());
         org.setName("Андрюша Суши и Роллы");
         when(organizationRepository.findById(order.getRestaurantId())).thenReturn(Optional.of(org));
-        stubPickupPoint(order, PICKUP_PHONE);
     }
 
     private void stubPickupPoint(DeliveryOrder order, String phone) {
