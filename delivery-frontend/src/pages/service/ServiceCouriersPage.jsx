@@ -181,24 +181,18 @@ export default function ServiceCouriersPage() {
   }
 
   const onApproveApplication = async (application) => {
-    if (!window.confirm(`Одобрить заявку от ${application.fullName}?`)) {
+    const messengerNote = application.messengerExternalId
+      ? ' Telegram/MAX привяжется автоматически.'
+      : ' Курьеру будут выданы логин и пароль.'
+    if (!window.confirm(`Одобрить заявку от ${application.fullName}?${messengerNote}`)) {
       return
     }
     setMessage('')
-    setCredentials(null)
     try {
       const result = await approveCourierRequest(application.id, courierServiceId)
+      setMessageOk(true)
+      setMessage(result?.message || 'Курьер одобрен')
       await Promise.all([reload(), reloadApplications()])
-      if (result?.credentials?.login && result?.credentials?.temporaryPassword) {
-        setCredentialsTitle('Курьер одобрен')
-        setCredentialsIntro(null)
-        setCredentials(result.credentials)
-      } else {
-        setMessageOk(true)
-        setMessage(
-          result?.message || 'Курьер одобрен и привязан к службе. Учётная запись уже существует.',
-        )
-      }
     } catch (err) {
       setMessageOk(false)
       setMessage(err?.message || 'Не удалось одобрить заявку')
@@ -265,13 +259,7 @@ export default function ServiceCouriersPage() {
         intro={credentialsIntro}
         login={credentials?.login}
         temporaryPassword={credentials?.temporaryPassword}
-        personHint={credentialsTitle === 'Курьер одобрен' ? null : 'Данные для курьера'}
-        transferNote={
-          credentialsTitle === 'Курьер одобрен'
-            ? 'Передайте данные курьеру самостоятельно. Временный пароль будет показан только один раз.'
-            : undefined
-        }
-        hideDefaultLabel={credentialsTitle === 'Курьер одобрен'}
+        personHint="Данные для курьера"
         onClose={() => setCredentials(null)}
       />
 

@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -178,6 +179,52 @@ class InternalFulfillmentQuoteApiIT extends AbstractPostgresIT {
                 .andExpect(jsonPath("$.code").value("BRANCH_NOT_FOUND"));
     }
 
+    @Test
+    void unconfiguredBranchReturnsConfiguredFalse() throws Exception {
+        UUID branchId = UUID.randomUUID();
+        mockMvc.perform(get("/internal/branches/" + branchId + "/fulfillment-settings")
+                        .header(DeliveryServiceKeyFilter.HEADER, SERVICE_KEY)
+                        .param("companyId", UUID.randomUUID().toString())
+                        .param("organizationId", UUID.randomUUID().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configured").value(false))
+                .andExpect(jsonPath("$.pickupEnabled").value(true))
+                .andExpect(jsonPath("$.deliveryEnabled").value(false));
+
+        verifyNoInteractions(restaurantAccessClient);
+    }
+
+    @Test
+    void configuredBranchReturnsSavedFlags() throws Exception {
+        UUID org = UUID.randomUUID();
+        UUID company = UUID.randomUUID();
+        UUID branchId = UUID.randomUUID();
+        seedConfigured(org, company, branchId);
+
+        mockMvc.perform(get("/internal/branches/" + branchId + "/fulfillment-settings")
+                        .header(DeliveryServiceKeyFilter.HEADER, SERVICE_KEY)
+                        .param("companyId", company.toString())
+                        .param("organizationId", org.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configured").value(true))
+                .andExpect(jsonPath("$.pickupEnabled").value(true))
+                .andExpect(jsonPath("$.deliveryEnabled").value(true));
+    }
+
+    @Test
+    void companyMismatchOnSettingsReturnsNotFound() throws Exception {
+        UUID org = UUID.randomUUID();
+        UUID company = UUID.randomUUID();
+        UUID branchId = UUID.randomUUID();
+        seedConfigured(org, company, branchId);
+
+        mockMvc.perform(get("/internal/branches/" + branchId + "/fulfillment-settings")
+                        .header(DeliveryServiceKeyFilter.HEADER, SERVICE_KEY)
+                        .param("companyId", UUID.randomUUID().toString()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("BRANCH_NOT_FOUND"));
+    }
+
     private void seedConfigured(UUID org, UUID company, UUID branchId) {
         Instant now = Instant.now();
         BranchFulfillmentSettings entity = new BranchFulfillmentSettings();
@@ -193,6 +240,7 @@ class InternalFulfillmentQuoteApiIT extends AbstractPostgresIT {
         entity.setDeliveryEstimatedMinMinutes(45);
         entity.setDeliveryEstimatedMaxMinutes(90);
         entity.setPickupEstimatedMinutes(30);
+        entity.setDeliveryPricingMode(DeliveryPricingMode.FLAT.name());
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         entity.setCreatedByUserId(1L);

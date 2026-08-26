@@ -6,8 +6,6 @@ import NewOrderPage from '../pages/shared/NewOrderPage.jsx'
 import ServiceOrderDetailPage from '../pages/service/ServiceOrderDetailPage.jsx'
 import ServiceProfilePage from '../pages/service/ServiceProfilePage.jsx'
 import ServiceAdminPage from '../pages/service/ServiceAdminPage.jsx'
-import ServicePartnerProgramRulesPage from '../pages/service/ServicePartnerProgramRulesPage.jsx'
-import ServiceFinancialSettingsPage from '../pages/service/ServiceFinancialSettingsPage.jsx'
 import ServiceCouriersPage from '../pages/service/ServiceCouriersPage.jsx'
 import ServiceCourierDetailPage from '../pages/service/ServiceCourierDetailPage.jsx'
 import ChannelsPage from '../pages/service/ChannelsPage.jsx'
@@ -17,7 +15,6 @@ import ObjectDetailPage from '../pages/service/ObjectDetailPage.jsx'
 import ObjectStaffPage from '../pages/service/ObjectStaffPage.jsx'
 import ObjectChannelsPage from '../pages/service/ObjectChannelsPage.jsx'
 import PickupPointsPage from '../pages/restaurant/PickupPointsPage.jsx'
-import RequireServiceStaff from '../components/RequireServiceStaff.jsx'
 import { DEV_AUTH_ENABLED } from '../config.js'
 
 const NAV = [
@@ -49,22 +46,6 @@ export default function ServiceRoutes() {
         <Route path="registration-requests" element={<Navigate to="/service/restaurants" replace />} />
         <Route path="channels" element={<ChannelsPage />} />
         <Route path="profile" element={<ServiceProfilePage />} />
-        <Route
-          path="partner-program"
-          element={(
-            <RequireServiceStaff>
-              <ServicePartnerProgramRulesPage />
-            </RequireServiceStaff>
-          )}
-        />
-        <Route
-          path="financial-settings"
-          element={(
-            <RequireServiceStaff>
-              <ServiceFinancialSettingsPage />
-            </RequireServiceStaff>
-          )}
-        />
         {DEV_AUTH_ENABLED && <Route path="admin" element={<ServiceAdminPage />} />}
         </Route>
       </Routes>

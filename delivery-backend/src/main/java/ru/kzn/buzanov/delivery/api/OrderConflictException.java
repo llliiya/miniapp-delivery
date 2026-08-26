@@ -33,7 +33,6 @@ public class OrderConflictException extends RuntimeException {
         return switch (errorCode) {
             case "order_already_taken" -> "Заказ уже взят другим курьером";
             case "order_not_available" -> "Заказ недоступен";
-            case "order_settlement_negative" -> "Сумма удержаний превышает стоимость доставки";
             default -> "Конфликт при обработке заказа";
         };
     }

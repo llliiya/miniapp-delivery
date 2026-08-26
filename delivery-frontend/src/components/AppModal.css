@@ -19,22 +19,6 @@
   overflow: hidden;
 }
 
-.app-modal--compact {
-  max-width: 400px;
-}
-
-.app-modal--compact .app-modal__header {
-  margin-bottom: 8px;
-}
-
-.app-modal--compact .app-modal__title {
-  font-size: 1.05rem;
-}
-
-.app-modal--compact .app-modal__footer {
-  margin-top: 12px;
-}
-
 .app-modal__header {
   display: flex;
   align-items: flex-start;

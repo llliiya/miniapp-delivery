@@ -23,8 +23,7 @@ const ORG_TYPE_LABELS = {
 
 export function labelForRole(role) {
   if (!role) return '—'
-  const normalized = String(role).toLowerCase()
-  return ROLE_LABELS[normalized] || '—'
+  return ROLE_LABELS[role] || '—'
 }
 
 export function labelForStatus(status) {
@@ -40,14 +39,6 @@ export function labelForOrgStatus(status) {
 export function labelForOrgType(type) {
   if (!type) return '—'
   return ORG_TYPE_LABELS[type] || '—'
-}
-
-/** Имя организации; подставляет fallback при битой кодировке в БД (????). */
-export function displayOrganizationName(name, fallback = 'Служба доставки') {
-  const trimmed = name?.trim()
-  if (!trimmed) return fallback
-  if (/^[\uFFFD?]+$/.test(trimmed)) return fallback
-  return trimmed
 }
 
 /** Текущая курьерская служба для экрана /service (прямое членство или через объект). */

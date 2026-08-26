@@ -57,14 +57,6 @@ export function getCourier(memberId) {
   return deliveryApi(`/couriers/${memberId}`)
 }
 
-export function fetchCourierBalance(memberId) {
-  return deliveryApi(`/couriers/${memberId}/balance`)
-}
-
-export function createCourierBalancePayout(memberId, body) {
-  return deliveryApi(`/couriers/${memberId}/balance/payout-requests`, 'POST', body)
-}
-
 export function addOrganizationMember(organizationId, body) {
   return deliveryApi(`/organizations/${organizationId}/members`, 'POST', body)
 }
@@ -286,75 +278,4 @@ export function fetchCourierPartnerProgram(memberId) {
 
 export function fetchRestaurantPartnerProgram(restaurantId) {
   return deliveryApi(`/restaurants/${restaurantId}/partner-program`)
-}
-
-export function createCourierPartnerPayout(memberId, body) {
-  return deliveryApi(`/couriers/${memberId}/partner-program/payout-requests`, 'POST', body)
-}
-
-export function createCourierPartnerBalanceTransfer(memberId, body) {
-  return deliveryApi(`/couriers/${memberId}/partner-program/balance-transfers`, 'POST', body)
-}
-
-export function createRestaurantPartnerPayout(restaurantId, body) {
-  return deliveryApi(`/restaurants/${restaurantId}/partner-program/payout-requests`, 'POST', body)
-}
-
-export function fetchPartnerProgramRules(courierServiceId) {
-  return deliveryApi(`/partner-program/rules?courierServiceId=${courierServiceId}`)
-}
-
-export function fetchPartnerPayoutRequests(courierServiceId) {
-  return deliveryApi(`/partner-program/payout-requests?courierServiceId=${courierServiceId}`)
-}
-
-export function fetchPartnerReferrals(courierServiceId) {
-  return deliveryApi(`/partner-program/referrals?courierServiceId=${courierServiceId}`)
-}
-
-export function upsertPartnerProgramRule(courierServiceId, body) {
-  return deliveryApi(`/partner-program/rules?courierServiceId=${courierServiceId}`, 'PUT', body)
-}
-
-export function fetchCourierServiceFinancialSettings(courierServiceId) {
-  return deliveryApi(`/courier-services/${courierServiceId}/financial-settings`)
-}
-
-export function upsertCourierServiceFinancialSettings(courierServiceId, body) {
-  return deliveryApi(`/courier-services/${courierServiceId}/financial-settings`, 'PUT', body)
-}
-
-export function processPartnerPayout(courierServiceId, payoutRequestId, approve, comment) {
-  const params = new URLSearchParams({
-    courierServiceId,
-    approve: String(approve),
-  })
-  if (comment) {
-    params.set('comment', comment)
-  }
-  return deliveryApi(
-    `/partner-program/payout-requests/${payoutRequestId}/process?${params.toString()}`,
-    'POST',
-  )
-}
-
-export function processCourierBalancePayout(courierServiceId, memberId, payoutRequestId, approve, comment) {
-  const params = new URLSearchParams({
-    courierServiceId,
-    approve: String(approve),
-  })
-  if (comment) {
-    params.set('comment', comment)
-  }
-  return deliveryApi(
-    `/couriers/${memberId}/balance/payout-requests/${payoutRequestId}/process?${params.toString()}`,
-    'POST',
-  )
-}
-
-export function takePartnerPayoutInWork(courierServiceId, payoutRequestId) {
-  return deliveryApi(
-    `/partner-program/payout-requests/${payoutRequestId}/take-in-work?courierServiceId=${courierServiceId}`,
-    'POST',
-  )
 }

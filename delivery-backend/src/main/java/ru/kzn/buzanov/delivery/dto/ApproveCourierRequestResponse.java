@@ -9,7 +9,6 @@ public record ApproveCourierRequestResponse(
         CourierRequestStatus status,
         UUID memberId,
         Long userId,
-        ProvisioningCredentialsDto credentials,
         String message
 ) {
 }

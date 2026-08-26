@@ -24,9 +24,6 @@ import ru.kzn.buzanov.delivery.dto.RepublishOrderResponseDto;
 import ru.kzn.buzanov.delivery.dto.request.ChangeOrderStatusRequest;
 import ru.kzn.buzanov.delivery.dto.request.CreateOrderRequest;
 import ru.kzn.buzanov.delivery.dto.request.PatchOrderRequest;
-import ru.kzn.buzanov.delivery.domain.OrderFinancialSnapshot;
-import ru.kzn.buzanov.delivery.dto.OrderFinancialSnapshotDto;
-import ru.kzn.buzanov.delivery.repository.OrderFinancialSnapshotRepository;
 import ru.kzn.buzanov.delivery.repository.CourierProfileRepository;
 import ru.kzn.buzanov.delivery.repository.DeliveryOrderRepository;
 import ru.kzn.buzanov.delivery.repository.OrganizationMemberRepository;
@@ -53,8 +50,7 @@ public class OrderService {
 
     private final DeliveryOrderRepository orderRepository;
     private final CourierProfileRepository courierProfileRepository;
-    private final OrderSettlementService orderSettlementService;
-    private final PartnerAccrualService partnerAccrualService;
+    private final CourierBalanceService courierBalanceService;
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository memberRepository;
     private final PickupPointRepository pickupPointRepository;
@@ -67,7 +63,6 @@ public class OrderService {
     private final OrderAssignmentEventPublisher assignmentEventPublisher;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final OrderPublicationEventPublisher publicationEventPublisher;
-    private final OrderFinancialSnapshotRepository financialSnapshotRepository;
 
     @Transactional
     public CreateOrderResponseDto create(Long userId, CreateOrderRequest request) {
@@ -286,11 +281,10 @@ public class OrderService {
         order.setStatus(newStatus);
         if (newStatus == OrderStatus.completed) {
             order.setCompletedAt(now);
-            orderSettlementService.settleCompletedOrder(order);
             incrementCompletedOrdersCount(order);
+            courierBalanceService.accrueOnOrderCompleted(order);
         } else if (newStatus == OrderStatus.cancelled) {
             order.setCancelledAt(now);
-            partnerAccrualService.reverseOnOrderCancelled(order);
         }
     }
 
@@ -489,28 +483,8 @@ public class OrderService {
                 order.getCompletedAt(),
                 order.getCancelledAt(),
                 publicationService.publicationFailures(order),
-                publicationService.canRepublish(order),
-                toFinancialSnapshotDto(order.getId())
+                publicationService.canRepublish(order)
         );
-    }
-
-    private OrderFinancialSnapshotDto toFinancialSnapshotDto(UUID orderId) {
-        return financialSnapshotRepository.findByOrderId(orderId)
-                .map(this::toFinancialSnapshotDto)
-                .orElse(null);
-    }
-
-    private OrderFinancialSnapshotDto toFinancialSnapshotDto(OrderFinancialSnapshot snapshot) {
-        return new OrderFinancialSnapshotDto(
-                snapshot.getOrderId(),
-                snapshot.getDeliveryPrice(),
-                snapshot.isPlatformFeeEnabled(),
-                snapshot.getPlatformFeeType(),
-                snapshot.getPlatformFeeValue(),
-                snapshot.getPlatformFeeAmount(),
-                snapshot.getPartnerRewardAmount(),
-                snapshot.getCourierNetEarning(),
-                snapshot.getPartnerRuleId());
     }
 
     private boolean shouldMaskPrivateCustomerData(Long userId, DeliveryOrder order) {
@@ -572,8 +546,7 @@ public class OrderService {
                 dto.completedAt(),
                 dto.cancelledAt(),
                 dto.publicationFailures(),
-                dto.canRepublish(),
-                dto.financialSnapshot()
+                dto.canRepublish()
         );
     }
 

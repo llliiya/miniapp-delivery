@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DEV_AUTH_ENABLED } from '../../config.js'
 import { fetchCourierPartnerProgram, getCourier } from '../../api/deliveryService.js'
-import CourierBalanceSection from '../../components/courier/CourierBalanceSection.jsx'
 import PartnerProgramSection from '../../components/partner/PartnerProgramSection.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { labelForStatus } from '../../utils/displayLabels.js'
@@ -11,6 +10,12 @@ import {
   resolvePendingPhone,
   resolvePendingUserId,
 } from '../../utils/pendingCourier.js'
+
+function formatBalance(value) {
+  const n = value != null ? Number(value) : 0
+  if (Number.isNaN(n)) return '0 ₽'
+  return `${n.toLocaleString('ru-RU')} ₽`
+}
 
 function statusBadgeClass(status) {
   if (status === 'active') return 'role-profile-badge role-profile-badge--active'
@@ -33,7 +38,6 @@ export default function CourierProfilePage() {
 
   const [courierStats, setCourierStats] = useState({ balance: 0, completedOrdersCount: 0 })
   const [refreshing, setRefreshing] = useState(false)
-  const [balanceReloadKey, setBalanceReloadKey] = useState(0)
 
   const userId = resolvePendingUserId(deliveryMe, accountUser)
   const phone = resolvePendingPhone(accountUser)
@@ -86,7 +90,7 @@ export default function CourierProfilePage() {
     return () => {
       cancelled = true
     }
-  }, [courierMembership?.memberId, isPendingCourier, balanceReloadKey])
+  }, [courierMembership?.memberId, isPendingCourier])
 
   const onRefreshStatus = async () => {
     setRefreshing(true)
@@ -102,10 +106,6 @@ export default function CourierProfilePage() {
     () => fetchCourierPartnerProgram(memberId),
     [memberId],
   )
-
-  const onBalanceChange = useCallback(() => {
-    setBalanceReloadKey((k) => k + 1)
-  }, [])
 
   return (
     <div className="role-profile-page">
@@ -165,12 +165,6 @@ export default function CourierProfilePage() {
         </section>
       ) : (
         <>
-          <CourierBalanceSection
-            memberId={memberId}
-            disabled={!memberId}
-            onBalanceChange={onBalanceChange}
-          />
-
           <section className="card role-profile-section">
             <h2 className="role-profile-section__title">Данные курьера</h2>
             <dl className="role-profile-dl">
@@ -199,7 +193,11 @@ export default function CourierProfilePage() {
             </dl>
           </section>
 
-          <section className="role-profile-stats role-profile-stats--one">
+          <section className="role-profile-stats role-profile-stats--two">
+            <article className="card role-profile-stat">
+              <p className="role-profile-stat__label">Баланс</p>
+              <p className="role-profile-stat__value">{formatBalance(courierStats.balance)}</p>
+            </article>
             <article className="card role-profile-stat">
               <p className="role-profile-stat__label">Выполнено заказов</p>
               <p className="role-profile-stat__value">{courierStats.completedOrdersCount ?? 0}</p>

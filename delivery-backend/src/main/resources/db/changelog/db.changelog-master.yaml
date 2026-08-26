@@ -57,29 +57,8 @@ databaseChangeLog:
       file: changes/019-organization-city.yaml
       relativeToChangelogFile: true
   - include:
-      file: changes/020-partner-program-financial.yaml
+      file: changes/020-branch-fulfillment-settings.yaml
       relativeToChangelogFile: true
   - include:
-      file: changes/021-courier-balance-payout.yaml
-      relativeToChangelogFile: true
-  - include:
-      file: changes/022-partner-accrual-available-from.yaml
-      relativeToChangelogFile: true
-  - include:
-      file: changes/023-partner-payout-cycle.yaml
-      relativeToChangelogFile: true
-  - include:
-      file: changes/023-fix-test-partner-account-data.yaml
-      relativeToChangelogFile: true
-  - include:
-      file: changes/024-order-financial-settlement.yaml
-      relativeToChangelogFile: true
-  - include:
-      file: changes/025-partner-balance-transfers.yaml
-      relativeToChangelogFile: true
-  - include:
-      file: changes/026-courier-balance-payout-details.yaml
-      relativeToChangelogFile: true
-  - include:
-      file: changes/027-branch-fulfillment-settings.yaml
+      file: changes/021-delivery-zones.yaml
       relativeToChangelogFile: true

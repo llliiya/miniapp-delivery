@@ -12,9 +12,15 @@ public record FulfillmentQuoteRequest(
         /** Optional soft ownership check for internal S2S callers. */
         UUID companyId,
         /** Optional soft ownership check for internal S2S callers. */
-        UUID organizationId
+        UUID organizationId,
+        Double latitude,
+        Double longitude
 ) {
     public FulfillmentQuoteRequest(FulfillmentType type, Long itemsTotalMinor) {
-        this(type, itemsTotalMinor, null, null);
+        this(type, itemsTotalMinor, null, null, null, null);
+    }
+
+    public FulfillmentQuoteRequest(FulfillmentType type, Long itemsTotalMinor, UUID companyId, UUID organizationId) {
+        this(type, itemsTotalMinor, companyId, organizationId, null, null);
     }
 }

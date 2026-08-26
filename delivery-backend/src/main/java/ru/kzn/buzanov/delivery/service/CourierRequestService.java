@@ -14,7 +14,6 @@ import ru.kzn.buzanov.delivery.domain.OrganizationType;
 import ru.kzn.buzanov.delivery.domain.PartnerReferrerType;
 import ru.kzn.buzanov.delivery.dto.ApproveCourierRequestResponse;
 import ru.kzn.buzanov.delivery.dto.CourierRequestDto;
-import ru.kzn.buzanov.delivery.dto.ProvisioningCredentialsDto;
 import ru.kzn.buzanov.delivery.dto.MessengerRegistrationStatusDto;
 import ru.kzn.buzanov.delivery.dto.PartnerReferrer;
 import ru.kzn.buzanov.delivery.dto.request.CreateCourierRequestRequest;
@@ -47,7 +46,6 @@ public class CourierRequestService {
     private final CourierRequestNotificationService notificationService;
     private final PartnerCodeService partnerCodeService;
     private final CourierMembershipChecks courierMembershipChecks;
-    private final PartnerReferralService partnerReferralService;
 
     @Transactional(readOnly = true)
     public MessengerRegistrationStatusDto messengerStatus(String provider, String externalId) {
@@ -172,7 +170,6 @@ public class CourierRequestService {
                 && !request.getMessengerProvider().isBlank()
                 && !request.getMessengerExternalId().isBlank();
 
-        ProvisioningCredentialsDto credentials = null;
         Long courierUserId;
 
         if (hasMessenger) {
@@ -181,15 +178,20 @@ public class CourierRequestService {
             if (existingUserId.isPresent()) {
                 courierUserId = existingUserId.get();
                 courierMembershipChecks.ensureCanAddCourier(courierServiceId, courierUserId);
-                linkMessengerIgnoringConflict(
-                        courierUserId,
-                        request.getMessengerProvider(),
-                        request.getMessengerExternalId());
+                try {
+                    accountUserClient.linkMessengerIdentity(
+                            courierUserId,
+                            request.getMessengerProvider(),
+                            request.getMessengerExternalId());
+                } catch (ResponseStatusException ex) {
+                    if (ex.getStatusCode() != HttpStatus.CONFLICT) {
+                        throw ex;
+                    }
+                }
             } else {
                 AccountProvisionResult provisioned = provisionCourierAccount(
                         request.getFullName(), request.getPhone(), requestEmail);
                 courierUserId = provisioned.userId();
-                credentials = toProvisioningCredentials(provisioned);
                 accountUserClient.linkMessengerIdentity(
                         courierUserId,
                         request.getMessengerProvider(),
@@ -199,7 +201,6 @@ public class CourierRequestService {
             AccountProvisionResult provisioned = provisionCourierAccount(
                     request.getFullName(), request.getPhone(), requestEmail);
             courierUserId = provisioned.userId();
-            credentials = toProvisioningCredentials(provisioned);
         }
 
         courierMembershipChecks.ensureCanAddCourier(courierServiceId, courierUserId);
@@ -217,20 +218,17 @@ public class CourierRequestService {
         requestRepository.save(request);
 
         OrganizationMember organizationMember = memberRepository.findById(member.id()).orElseThrow();
-        partnerReferralService.createFromApprovedCourierRequest(
-                request, courierServiceId, organizationMember.getId(), now);
         profileService.syncFromMembership(organizationMember);
 
-        String message = credentials != null
-                ? "Курьер одобрен"
-                : "Курьер одобрен и привязан к службе. Учётная запись уже существует.";
+        String message = hasMessenger
+                ? "Курьер одобрен. Telegram/MAX привязан автоматически."
+                : "Курьер одобрен. Логин и пароль отправлены на указанный телефон.";
 
         return new ApproveCourierRequestResponse(
                 request.getId(),
                 request.getStatus(),
                 organizationMember.getId(),
                 courierUserId,
-                credentials,
                 message);
     }
 
@@ -250,25 +248,6 @@ public class CourierRequestService {
     private AccountProvisionResult provisionCourierAccount(String fullName, String phone, String email) {
         return accountProvisioningClient.provisionWebEmployee(
                 AccountProvisionRequest.forCourier(fullName, phone, email));
-    }
-
-    private static ProvisioningCredentialsDto toProvisioningCredentials(AccountProvisionResult provisioned) {
-        String login = provisioned.login();
-        String temporaryPassword = provisioned.temporaryPassword();
-        if (login == null || login.isBlank() || temporaryPassword == null || temporaryPassword.isBlank()) {
-            return null;
-        }
-        return ProvisioningCredentialsDto.fromProvision(login, temporaryPassword);
-    }
-
-    private void linkMessengerIgnoringConflict(Long userId, String provider, String externalId) {
-        try {
-            accountUserClient.linkMessengerIdentity(userId, provider, externalId);
-        } catch (ResponseStatusException ex) {
-            if (ex.getStatusCode() != HttpStatus.CONFLICT) {
-                throw ex;
-            }
-        }
     }
 
     private boolean hasActiveCourierMembership(Long userId) {

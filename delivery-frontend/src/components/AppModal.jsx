@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import './AppModal.css'
 
-export default function AppModal({ open, title, onClose, children, footer, compact = false }) {
+export default function AppModal({ open, title, onClose, children, footer }) {
   useEffect(() => {
     if (!open) return undefined
     const onKeyDown = (event) => {
@@ -26,10 +26,7 @@ export default function AppModal({ open, title, onClose, children, footer, compa
       aria-labelledby={title ? 'app-modal-title' : undefined}
       onClick={onClose}
     >
-      <div
-        className={`app-modal card${compact ? ' app-modal--compact' : ''}`}
-        onClick={(event) => event.stopPropagation()}
-      >
+      <div className="app-modal card" onClick={(event) => event.stopPropagation()}>
         <div className="app-modal__header">
           {title ? (
             <h2 id="app-modal-title" className="app-modal__title">

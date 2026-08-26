@@ -6,15 +6,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(schema = "delivery", name = "branch_fulfillment_settings")
+@Table(schema = "delivery", name = "delivery_zone")
 @Getter
 @Setter
-public class BranchFulfillmentSettings {
+public class DeliveryZone {
 
     @Id
     private UUID id;
@@ -28,14 +30,18 @@ public class BranchFulfillmentSettings {
     @Column(name = "branch_id", nullable = false)
     private UUID branchId;
 
-    @Column(name = "delivery_enabled", nullable = false)
-    private boolean deliveryEnabled;
+    @Column(nullable = false, length = 80)
+    private String name;
 
-    @Column(name = "pickup_enabled", nullable = false)
-    private boolean pickupEnabled;
+    @Column(nullable = false)
+    private boolean active;
 
-    @Column(name = "minimum_delivery_order_minor", nullable = false)
-    private long minimumDeliveryOrderMinor;
+    @Column(nullable = false)
+    private int priority;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "jsonb")
+    private String geometry;
 
     @Column(name = "delivery_fee_minor", nullable = false)
     private long deliveryFeeMinor;
@@ -43,17 +49,14 @@ public class BranchFulfillmentSettings {
     @Column(name = "free_delivery_from_minor")
     private Long freeDeliveryFromMinor;
 
-    @Column(name = "delivery_estimated_min_minutes", nullable = false)
-    private int deliveryEstimatedMinMinutes;
+    @Column(name = "min_order_amount_minor")
+    private Long minOrderAmountMinor;
 
-    @Column(name = "delivery_estimated_max_minutes", nullable = false)
-    private int deliveryEstimatedMaxMinutes;
+    @Column(name = "eta_min_minutes")
+    private Integer etaMinMinutes;
 
-    @Column(name = "pickup_estimated_minutes", nullable = false)
-    private int pickupEstimatedMinutes;
-
-    @Column(name = "delivery_pricing_mode", nullable = false, length = 16)
-    private String deliveryPricingMode = DeliveryPricingMode.FLAT.name();
+    @Column(name = "eta_max_minutes")
+    private Integer etaMaxMinutes;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

@@ -5,8 +5,8 @@
 
 set -euo pipefail
 
-GITHUB_TOKEN="${GITHUB_TOKEN:?Set GITHUB_TOKEN in the environment before running}"
-GITHUB_ORG="llliiya"
+GITHUB_TOKEN="${GITHUB_TOKEN:?export GITHUB_TOKEN=... before running}"
+GITHUB_ORG="${GITHUB_ORG:-llliiya}"
 BRANCH="main"
 DEPLOY_ROOT="/opt/delivery"
 WORKSPACE="$DEPLOY_ROOT/workspace"

@@ -37,6 +37,9 @@ class BranchFulfillmentSettingsServiceTest {
     @Mock
     private RestaurantAccessClient restaurantAccessClient;
 
+    @Mock
+    private DeliveryZoneService deliveryZoneService;
+
     @InjectMocks
     private BranchFulfillmentSettingsService service;
 
@@ -379,6 +382,7 @@ class BranchFulfillmentSettingsServiceTest {
         entity.setDeliveryEstimatedMinMinutes(45);
         entity.setDeliveryEstimatedMaxMinutes(90);
         entity.setPickupEstimatedMinutes(30);
+        entity.setDeliveryPricingMode(DeliveryPricingMode.FLAT.name());
         entity.setCreatedByUserId(1L);
         return entity;
     }
