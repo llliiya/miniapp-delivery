@@ -1,12 +1,15 @@
 # miniapp-delivery
 
-Курьерская биржа доставки (отдельно от Помощник ПВЗ).
+Курьерская биржа доставки (отдельно от ПВЗ).
+
+Карта платформы: [miniapp-deploy/docs/architecture/delivery.md](../miniapp-deploy/docs/architecture/delivery.md) · [обзор](../miniapp-deploy/docs/architecture/overview.md).
 
 ## Структура
 
 - `delivery-backend` — API, schema `delivery`
 - `delivery-frontend` — Mini App (Vite + React)
-- `docker-compose.dev.yml` / `docker-compose.prod.yml` — конфигурация стека
+- `docker-compose.dev.yml` / `docker-compose.prod.yml` — стек
+- Платформа: `miniapp-account`, `miniapp-notification`, `miniapp-gateway`
 
 ## Dev
 
@@ -20,4 +23,6 @@ docker compose -f miniapp-delivery/docker-compose.dev.yml up --build -d
 
 ## Prod
 
-Секреты в `docker-compose.prod.yml`, деплой: `deploy/DEPLOY.md`
+Секреты через env / compose на сервере. Деплой: `deploy/DEPLOY.md`.
+
+**TODO:** захардкоженные токены в `docker-compose.dev.yml` — вынести в `.env`.

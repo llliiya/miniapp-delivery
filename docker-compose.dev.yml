@@ -1,5 +1,9 @@
 # Локальный delivery-стек (из корня valentin).
 # Запуск: docker compose -f miniapp-delivery/docker-compose.dev.yml up --build -d
+# Backend: Dockerfile.dev — слои pom/go-offline/src/package (без отдельного BuildKit-образа).
+#
+# TODO: убрать захардкоженные TG_TOKEN / MAX_BOT_TOKEN / DELIVERY_MAX_BOT_TOKEN / JWT_SECRET —
+# вынести в .env (не коммитить секреты). См. miniapp-deploy/docs/architecture/delivery.md
 
 name: delivery_dev
 
