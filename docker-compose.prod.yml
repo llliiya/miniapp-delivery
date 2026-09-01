@@ -1,5 +1,6 @@
 # Prod delivery-стек на выделенной машине.
 # Публичные порты: 80, 443. Запуск: deploy/deploy-delivery-full.sh
+# Java: mvn на хосте → docker/Dockerfile.*.jar (без maven внутри образа)
 # Перед деплоем: certbot для 217.149.22.212.sslip.io
 
 name: delivery
@@ -28,7 +29,7 @@ services:
   account:
     build:
       context: ..
-      dockerfile: miniapp-account/Dockerfile.stack
+      dockerfile: miniapp-delivery/docker/Dockerfile.account.jar
     restart: unless-stopped
     depends_on:
       db:
@@ -59,7 +60,7 @@ services:
   notification:
     build:
       context: ..
-      dockerfile: miniapp-notification/Dockerfile.stack
+      dockerfile: miniapp-delivery/docker/Dockerfile.notification.jar
     restart: unless-stopped
     depends_on:
       db:
@@ -72,7 +73,7 @@ services:
   delivery-backend:
     build:
       context: ..
-      dockerfile: miniapp-delivery/delivery-backend/Dockerfile
+      dockerfile: miniapp-delivery/docker/Dockerfile.delivery-backend.jar
     restart: unless-stopped
     depends_on:
       db:
@@ -104,7 +105,7 @@ services:
   gateway:
     build:
       context: ..
-      dockerfile: miniapp-delivery/docker/Dockerfile.gateway
+      dockerfile: miniapp-delivery/docker/Dockerfile.gateway.jar
     restart: unless-stopped
     depends_on:
       - account

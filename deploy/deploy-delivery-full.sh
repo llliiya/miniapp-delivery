@@ -32,8 +32,28 @@ load_deploy_domain_from_compose() {
 echo "===== DEPLOY DELIVERY FULL STARTED ====="
 
 command -v git >/dev/null || { echo "❌ git не найден"; exit 1; }
+command -v mvn >/dev/null || { echo "❌ mvn не найден (нужен Maven 3.9+ и JDK 21 на хосте)"; exit 1; }
+command -v java >/dev/null || { echo "❌ java не найден (нужен JDK 21 на хосте)"; exit 1; }
 command -v docker >/dev/null || { echo "❌ docker не найден"; exit 1; }
 docker compose version >/dev/null 2>&1 || { echo "❌ docker compose plugin не найден"; exit 1; }
+
+build_maven_stack() {
+  local ws="$1"
+  echo "  → notification-client"
+  mvn -f "$ws/miniapp-notification/notification-client/pom.xml" -DskipTests install
+  echo "  → miniapp-account-client"
+  mvn -f "$ws/miniapp-account/miniapp-account-client/pom.xml" -DskipTests install
+  cp "$ws/miniapp-deploy/pom-arenda-stack.xml" "$ws/pom.xml"
+  cd "$ws"
+  echo "  → miniapp-notification"
+  mvn -pl miniapp-notification -am -DskipTests package
+  echo "  → miniapp-account"
+  mvn -pl miniapp-account -am -DskipTests package
+  echo "  → delivery-backend"
+  mvn -f miniapp-delivery/delivery-backend/pom.xml -DskipTests package
+  echo "  → miniapp-gateway"
+  mvn -f miniapp-gateway/pom.xml -DskipTests package
+}
 
 [[ -n "$GITHUB_TOKEN" ]] || { echo "❌ export GITHUB_TOKEN=... перед запуском"; exit 1; }
 
@@ -84,7 +104,10 @@ if command -v systemctl >/dev/null; then
   done
 fi
 
-echo "[3] Docker compose up"
+echo "[3] Maven build на хосте (зависимости кэшируются в ~/.m2)"
+build_maven_stack "$WORKSPACE"
+
+echo "[4] Docker compose up (только JAR + runtime-образ)"
 cd "$WORKSPACE/miniapp-delivery"
 docker compose -f docker-compose.prod.yml up -d --build
 

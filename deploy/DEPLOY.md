@@ -15,10 +15,13 @@ UI `http://localhost:5173`, API `http://localhost:8080/api/...`, Postgres `:5430
 
 ## Prod
 
-1. Все значения в `docker-compose.prod.yml` (домен: `217.149.22.212.sslip.io`)
-2. `export GITHUB_TOKEN=...` перед запуском скрипта
-3. certbot: `/etc/letsencrypt/live/217.149.22.212.sslip.io/`
-4. `bash deploy/deploy-delivery-full.sh`
+1. На сервере: **JDK 21**, **Maven 3.9+**, Docker Compose
+2. Все значения в `docker-compose.prod.yml` (домен: `217.149.22.212.sslip.io`)
+3. `export GITHUB_TOKEN=...` перед запуском скрипта
+4. certbot: `/etc/letsencrypt/live/217.149.22.212.sslip.io/`
+5. `bash deploy/deploy-delivery-full.sh`
+
+Скрипт собирает Java-сервисы через Maven на хосте (`~/.m2` кэш), в Docker кладёт только готовые JAR (`docker/Dockerfile.*.jar`). Frontend по-прежнему собирается в контейнере.
 
 Порты на хосте: **80**, **443** (контейнер `delivery-frontend`).
 
