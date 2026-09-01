@@ -1,6 +1,6 @@
 # Prod delivery-стек на выделенной машине.
 # Публичные порты: 80, 443. Запуск: deploy/deploy-delivery-full.sh
-# Перед деплоем: certbot для 85.239.58.129.sslip.io
+# Перед деплоем: certbot для 217.149.22.212.sslip.io
 
 name: delivery
 
@@ -40,7 +40,7 @@ services:
       JWT_SECRET: ОченьСекретныйКлюч1234567890
       MINAPP_INTERNAL_MONOLITH_KEY: dev-monolith-internal-key
       MINAPP_NOTIFICATION_BASE_URL: http://notification:8093
-      FRONTEND_URL: https://85.239.58.129.sslip.io
+      FRONTEND_URL: https://217.149.22.212.sslip.io/
       TG_TOKEN: "8989575508:AAFyJdP_94vN4I1jUfTOTLuxEj0Wlv7BM6A"
       TG_USERNAME: dobrovoz_test_bot
       PLUSOFON_API_KEY: ""
@@ -90,8 +90,8 @@ services:
       MINAPP_ACCOUNT_BASE_URL: http://account:8092
       MINAPP_INTERNAL_MONOLITH_KEY: dev-monolith-internal-key
       MINAPP_NOTIFICATION_BASE_URL: http://notification:8093
-      FRONTEND_DELIVERY_URL: https://85.239.58.129.sslip.io
-      DELIVERY_PUBLIC_API_URL: https://85.239.58.129.sslip.io
+      FRONTEND_DELIVERY_URL: https://217.149.22.212.sslip.io/
+      DELIVERY_PUBLIC_API_URL: https://217.149.22.212.sslip.io/
       TG_TOKEN: "8989575508:AAFyJdP_94vN4I1jUfTOTLuxEj0Wlv7BM6A"
       TG_BOT_USERNAME: dobrovoz_test_bot
       TG_BOT_MINI_APP_SHORT_NAME: ""
@@ -111,7 +111,7 @@ services:
       - notification
       - delivery-backend
     environment:
-      GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS: https://85.239.58.129.sslip.io
+      GATEWAY_CORS_ALLOWED_ORIGIN_PATTERNS: https://217.149.22.212.sslip.io/
       GATEWAY_URI_MINAPP_ACCOUNT: http://account:8092
       GATEWAY_URI_MINIAPP_NOTIFICATION: http://notification:8093
       GATEWAY_URI_DELIVERY_BACKEND: http://delivery-backend:9081
@@ -124,12 +124,12 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_ENV: production
-        VITE_API_BASE_URL: https://85.239.58.129.sslip.io
+        VITE_API_BASE_URL: https://217.149.22.212.sslip.io/
         VITE_YANDEX_MAPS_API_KEY: fdd12e01-6106-4541-bd92-d611fd0f9ae8
         VITE_DGIS_API_KEY: ""
     restart: unless-stopped
     environment:
-      DOMAIN: 85.239.58.129.sslip.io
+      DOMAIN: 217.149.22.212.sslip.io
       NGINX_ENVSUBST_FILTER: "^(DOMAIN)$$"
     ports:
       - "80:80"

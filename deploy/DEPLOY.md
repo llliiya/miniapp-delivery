@@ -15,9 +15,9 @@ UI `http://localhost:5173`, API `http://localhost:8080/api/...`, Postgres `:5430
 
 ## Prod
 
-1. Все значения в `docker-compose.prod.yml` (домен: `85.239.58.129.sslip.io`)
+1. Все значения в `docker-compose.prod.yml` (домен: `217.149.22.212.sslip.io`)
 2. `export GITHUB_TOKEN=...` перед запуском скрипта
-3. certbot: `/etc/letsencrypt/live/85.239.58.129.sslip.io/`
+3. certbot: `/etc/letsencrypt/live/217.149.22.212.sslip.io/`
 4. `bash deploy/deploy-delivery-full.sh`
 
 Порты на хосте: **80**, **443** (контейнер `delivery-frontend`).
