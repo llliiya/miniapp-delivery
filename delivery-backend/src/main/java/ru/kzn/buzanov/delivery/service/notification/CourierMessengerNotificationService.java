@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import ru.kzn.buzanov.delivery.config.DeliveryBotProperties;
@@ -24,6 +25,7 @@ import ru.kzn.buzanov.delivery.service.publication.MaxOpenAppButtons;
 import ru.kzn.buzanov.delivery.service.publication.OrderMessageFormatter;
 import ru.kzn.buzanov.delivery.service.publication.TelegramKeyboardFactory;
 
+import java.time.Duration;
 import java.util.List;
 
 @Slf4j
@@ -128,7 +130,10 @@ public class CourierMessengerNotificationService {
                     keyboardFactory.buildCourierAssignedDmLinkButtons(order);
             ObjectNode body = buildMaxMessageBody(text, buttonRows);
             String base = trimSlash(properties.getMax().getApiBaseUrl());
-            RestClient client = RestClient.builder().baseUrl(base).build();
+            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(Duration.ofSeconds(10));
+            factory.setReadTimeout(Duration.ofSeconds(15));
+            RestClient client = RestClient.builder().baseUrl(base).requestFactory(factory).build();
             client.post()
                     .uri(uriBuilder -> uriBuilder.path("/messages").queryParam("chat_id", chatId).build())
                     .header(HttpHeaders.AUTHORIZATION, token.trim())

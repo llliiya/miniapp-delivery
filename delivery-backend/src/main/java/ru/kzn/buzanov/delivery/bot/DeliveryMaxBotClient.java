@@ -7,12 +7,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import ru.kzn.buzanov.delivery.config.DeliveryBotProperties;
 
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
 
 @Slf4j
 @Component
@@ -79,8 +79,12 @@ public class DeliveryMaxBotClient {
 
     private RestClient restClient(String token) {
         String base = trimSlash(properties.getMax().getApiBaseUrl());
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofSeconds(15));
         return RestClient.builder()
                 .baseUrl(base)
+                .requestFactory(factory)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, token.trim())
                 .build();
     }

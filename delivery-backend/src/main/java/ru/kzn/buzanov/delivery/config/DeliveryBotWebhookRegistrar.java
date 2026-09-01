@@ -35,8 +35,24 @@ public class DeliveryBotWebhookRegistrar implements ApplicationListener<Applicat
 
     @Override
     public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
-        CompletableFuture.runAsync(this::registerTelegramWebhook);
-        CompletableFuture.runAsync(this::registerMaxWebhook);
+        CompletableFuture.runAsync(this::registerTelegramWebhookSafely);
+        CompletableFuture.runAsync(this::registerMaxWebhookSafely);
+    }
+
+    private void registerTelegramWebhookSafely() {
+        try {
+            registerTelegramWebhook();
+        } catch (Exception e) {
+            log.warn("Delivery bot: telegram webhook registration aborted: {}", e.getMessage());
+        }
+    }
+
+    private void registerMaxWebhookSafely() {
+        try {
+            registerMaxWebhook();
+        } catch (Exception e) {
+            log.warn("Delivery MAX bot: webhook registration aborted: {}", e.getMessage());
+        }
     }
 
     private void registerTelegramWebhook() {

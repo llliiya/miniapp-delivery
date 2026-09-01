@@ -81,6 +81,8 @@ services:
         condition: service_started
     environment:
       DELIVERY_SERVER_PORT: "9081"
+      SPRING_PROFILES_ACTIVE: prod
+      DELIVERY_TELEGRAM_POLLING: "false"
       DELIVERY_DB_URL: jdbc:postgresql://db:5432/delivery?currentSchema=delivery
       DELIVERY_DB_USERNAME: postgres
       DELIVERY_DB_PASSWORD: CHANGE_ME_strong_db_password

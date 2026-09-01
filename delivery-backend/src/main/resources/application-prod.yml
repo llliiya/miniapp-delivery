@@ -1,0 +1,4 @@
+# Production: webhook для Telegram, без long polling.
+delivery:
+  telegram:
+    polling-enabled: false

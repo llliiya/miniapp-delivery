@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -17,6 +18,7 @@ import ru.kzn.buzanov.delivery.domain.OrderStatus;
 import ru.kzn.buzanov.delivery.domain.PublicationChannel;
 import ru.kzn.buzanov.delivery.service.DeliveryDeepLinkService;
 
+import java.time.Duration;
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -116,8 +118,7 @@ public class MaxChannelPublisher {
 
     private ChannelPublishResult send(String chatId, String token, ObjectNode body, Long publicNumber) {
         long cid = Long.parseLong(chatId.trim());
-        String base = trimSlash(properties.getMax().getApiBaseUrl());
-        RestClient client = RestClient.builder().baseUrl(base).build();
+        RestClient client = maxRestClient();
         try {
             String responseBody = client.post()
                     .uri(uriBuilder -> uriBuilder.path("/messages").queryParam("chat_id", cid).build())
@@ -141,8 +142,7 @@ public class MaxChannelPublisher {
     }
 
     private String putMessage(String token, String messageId, ObjectNode body) {
-        String base = trimSlash(properties.getMax().getApiBaseUrl());
-        RestClient client = RestClient.builder().baseUrl(base).build();
+        RestClient client = maxRestClient();
         return client.put()
                 .uri(uriBuilder -> uriBuilder
                         .path("/messages")
@@ -276,6 +276,16 @@ public class MaxChannelPublisher {
         }
         String trimmed = value.trim();
         return trimmed.length() <= 300 ? trimmed : trimmed.substring(0, 300) + "...";
+    }
+
+    private RestClient maxRestClient() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofSeconds(15));
+        return RestClient.builder()
+                .baseUrl(trimSlash(properties.getMax().getApiBaseUrl()))
+                .requestFactory(factory)
+                .build();
     }
 
     private static String trimSlash(String url) {
