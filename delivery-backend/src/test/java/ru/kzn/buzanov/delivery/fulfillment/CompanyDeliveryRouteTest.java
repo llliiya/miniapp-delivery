@@ -84,6 +84,27 @@ class CompanyDeliveryRouteTest {
     }
 
     @Test
+    void preferredBranchKeptWhenItCoversDespiteLowerPriorityOverlap() {
+        UUID companyId = UUID.randomUUID();
+        UUID branchA = UUID.randomUUID();
+        UUID branchB = UUID.randomUUID();
+        when(repository.findByBranchIdIn(any())).thenReturn(List.of(
+                zonesSettings(companyId, branchA),
+                zonesSettings(companyId, branchB)));
+        DeliveryZone zoneA = zone(companyId, branchA, "A-low", 1);
+        when(deliveryZoneService.matchActiveZone(eq(branchA), anyDouble(), anyDouble()))
+                .thenReturn(Optional.of(zoneA));
+
+        InternalCompanyDeliveryRouteResponse route = service.routeInternal(
+                companyId,
+                new InternalCompanyDeliveryRouteRequest(
+                        null, List.of(branchA, branchB), 200_000L, 55.8, 49.1, branchA));
+
+        assertThat(route.branchId()).isEqualTo(branchA);
+        assertThat(route.zoneName()).isEqualTo("A-low");
+    }
+
+    @Test
     void outsideAllZones() {
         UUID companyId = UUID.randomUUID();
         UUID branchA = UUID.randomUUID();

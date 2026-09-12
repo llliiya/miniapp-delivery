@@ -288,7 +288,11 @@ public class BranchFulfillmentSettingsService {
 
     /**
      * Company-wide delivery routing: pick the serving branch from overlapping active zones
-     * among candidate branches. Zone {@code priority} is the sole business rule for overlaps.
+     * among candidate branches. Zone {@code priority} is the sole business rule for overlaps
+     * when the preferred branch does not cover the point.
+     *
+     * <p>When {@code preferredBranchId} covers the address, that branch is kept
+     * (user-selected branch wins over higher-priority foreign zones).
      *
      * <p>Fallback: when no candidate uses ZONES mode, a single FLAT delivery-enabled branch
      * may serve the whole city (backward compatible single-branch flat pricing).
@@ -336,9 +340,16 @@ public class BranchFulfillmentSettingsService {
         }
 
         if (!zonesEligible.isEmpty()) {
-            DeliveryZone zone = deliveryZoneService
-                    .matchActiveZoneAmongBranches(companyId, zonesEligible, lon, lat)
-                    .orElse(null);
+            DeliveryZone zone = null;
+            UUID preferred = request.preferredBranchId();
+            if (preferred != null && zonesEligible.contains(preferred)) {
+                zone = deliveryZoneService.matchActiveZone(preferred, lon, lat).orElse(null);
+            }
+            if (zone == null) {
+                zone = deliveryZoneService
+                        .matchActiveZoneAmongBranches(companyId, zonesEligible, lon, lat)
+                        .orElse(null);
+            }
             if (zone == null) {
                 String issue = deliveryZoneRepository
                         .findByCompanyIdAndBranchIdInAndActiveTrueOrderByPriorityDescCreatedAtAscIdAsc(
